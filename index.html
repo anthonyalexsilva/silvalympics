@@ -142,7 +142,13 @@
         }
 
         function saveResult(time, t1, t2, event, winner) {
-            data.results[getResultKey(time, t1, t2, event)] = winner;
+            const key = getResultKey(time, t1, t2, event);
+            // If clicking the same result again, undo it
+            if (data.results[key] === winner) {
+                delete data.results[key];
+            } else {
+                data.results[key] = winner;
+            }
             saveData();
             render();
         }
@@ -392,8 +398,11 @@
         loadData();
         render();
         setInterval(() => {
-            loadData();
-            render();
+            // Only refresh if not on input screens
+            if (state.view !== 'team-names' && state.view !== 'wagers') {
+                loadData();
+                render();
+            }
         }, 3000);
     </script>
 </body>
