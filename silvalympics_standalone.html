@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>10th Annual Silvalympics</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .title { color: white; text-align: center; font-size: 32px; font-weight: bold; margin-bottom: 30px; }
+        .team-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        @media (min-width: 768px) { .team-grid { grid-template-columns: repeat(4, 1fr); } }
+        .team-btn { background: white; padding: 20px; border-radius: 10px; border: none; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s; }
+        .team-btn:hover { transform: scale(1.05); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+        .team-num { color: #667eea; font-weight: bold; font-size: 18px; margin-bottom: 5px; }
+        .team-name { color: #666; font-size: 14px; }
+        .card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+        .back-btn { color: white; background: none; border: none; cursor: pointer; margin-bottom: 15px; font-size: 16px; }
+        .back-btn:hover { text-decoration: underline; }
+        .card-title { color: #667eea; font-size: 24px; font-weight: bold; text-align: center; margin-bottom: 25px; }
+        .menu-btn { width: 100%; padding: 15px; margin-bottom: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; color: white; transition: opacity 0.2s; }
+        .menu-btn:hover { opacity: 0.9; }
+        .blue { background: #3b82f6; }
+        .green { background: #10b981; }
+        .purple { background: #8b5cf6; }
+        .orange { background: #f59e0b; }
+        .red { background: #ef4444; }
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; font-weight: 600; margin-bottom: 5px; color: #333; }
+        .input-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
+        .wager-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .wager-row label { flex: 1; font-size: 14px; }
+        .wager-row input { width: 80px; padding: 8px; text-align: center; border: 1px solid #ddd; border-radius: 6px; }
+        .total { font-size: 18px; font-weight: bold; margin: 20px 0; }
+        .total.valid { color: #10b981; }
+        .total.invalid { color: #ef4444; }
+        .schedule-item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; margin-bottom: 12px; background: #f9fafb; }
+        .schedule-time { font-weight: bold; font-size: 18px; margin-bottom: 5px; }
+        .schedule-event { color: #8b5cf6; font-weight: 600; margin-bottom: 3px; }
+        .schedule-vs { color: #666; font-size: 14px; }
+        .result-btns { display: flex; gap: 10px; margin-top: 10px; }
+        .result-btns button { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .win-btn { background: #d1fae5; color: #065f46; }
+        .win-btn.active { background: #10b981; color: white; }
+        .lose-btn { background: #fee2e2; color: #991b1b; }
+        .lose-btn.active { background: #ef4444; color: white; }
+        .standing { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-radius: 8px; margin-bottom: 8px; }
+        .standing-green { background: #d1fae5; }
+        .standing-blue { background: #dbeafe; }
+        .standing-red { background: #fee2e2; }
+        .standing-left { display: flex; align-items: center; gap: 15px; flex: 1; }
+        .standing-rank { font-size: 24px; font-weight: bold; color: #999; width: 30px; }
+        .standing-name { font-weight: 600; color: #333; }
+        .standing-record { color: #666; font-size: 14px; }
+        .standing-badge { font-size: 12px; font-weight: bold; }
+        .badge-green { color: #065f46; }
+        .badge-blue { color: #1e40af; }
+        .scrollable { max-height: 500px; overflow-y: auto; }
+        .info-box { background: #f3f4f6; border-radius: 8px; padding: 15px; margin-top: 20px; font-size: 14px; }
+        .info-box div { margin-bottom: 5px; color: #666; }
+        .saved { background: #10b981 !important; }
+        .hide { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container" id="app"></div>
+
+    <script>
+        const EVENTS = ['Mölkky', 'Bocce', 'Giant Pong', 'Cornhole', 'BULZiBUCKET', 'Ladder Ball', 'QB54', 'Soccer Bocce', 'Bean Bag Memory Match'];
+        
+        const SCHEDULE = [
+            { time: '10:40am', matches: [
+                [1,2,'Giant Pong'],[3,4,'BULZiBUCKET'],[5,6,'Mölkky'],[7,8,'Cornhole'],[9,10,'Bocce'],
+                [11,12,'Ladder Ball'],[13,14,'QB54'],[19,16,'Soccer Bocce'],[17,20,'Bean Bag Memory Match'],[15,18,'Break']
+            ]},
+            { time: '11:00am', matches: [
+                [4,5,'Giant Pong'],[6,7,'BULZiBUCKET'],[8,9,'Mölkky'],[10,11,'Cornhole'],[12,13,'Bocce'],
+                [14,3,'Ladder Ball'],[16,17,'QB54'],[18,15,'Soccer Bocce'],[1,19,'Bean Bag Memory Match'],[20,2,'Break']
+            ]},
+            { time: '11:20am', matches: [
+                [6,8,'Giant Pong'],[10,12,'BULZiBUCKET'],[14,16,'Mölkky'],[18,20,'Cornhole'],[2,4,'Bocce'],
+                [5,7,'Ladder Ball'],[9,11,'QB54'],[1,17,'Soccer Bocce'],[3,15,'Bean Bag Memory Match'],[13,19,'Break']
+            ]},
+            { time: '11:40am', matches: [
+                [7,9,'Giant Pong'],[11,13,'BULZiBUCKET'],[15,17,'Mölkky'],[19,1,'Cornhole'],[3,5,'Bocce'],
+                [4,6,'Ladder Ball'],[8,10,'QB54'],[20,12,'Soccer Bocce'],[2,18,'Bean Bag Memory Match'],[16,14,'Break']
+            ]},
+            { time: '12:00pm', matches: [
+                [10,14,'Giant Pong'],[18,2,'BULZiBUCKET'],[7,11,'Mölkky'],[15,3,'Cornhole'],[19,8,'Bocce'],
+                [16,20,'Ladder Ball'],[5,12,'QB54'],[4,6,'Soccer Bocce'],[9,13,'Bean Bag Memory Match'],[17,1,'Break']
+            ]},
+            { time: '12:20pm', matches: [[0,0,'Pizza!']] },
+            { time: '12:40pm', matches: [
+                [11,15,'Giant Pong'],[19,9,'BULZiBUCKET'],[3,12,'Mölkky'],[4,16,'Cornhole'],[20,17,'Bocce'],
+                [8,13,'Ladder Ball'],[1,18,'QB54'],[10,2,'Soccer Bocce'],[14,7,'Bean Bag Memory Match'],[6,5,'Break']
+            ]},
+            { time: '1:00pm', matches: [
+                [20,19,'Giant Pong'],[15,16,'BULZiBUCKET'],[4,10,'Mölkky'],[2,17,'Cornhole'],[18,6,'Bocce'],
+                [1,9,'Ladder Ball'],[7,3,'QB54'],[14,13,'Soccer Bocce'],[11,5,'Bean Bag Memory Match'],[8,12,'Break']
+            ]},
+            { time: '1:20pm', matches: [
+                [18,3,'Giant Pong'],[14,20,'BULZiBUCKET'],[2,13,'Mölkky'],[9,12,'Cornhole'],[1,16,'Bocce'],
+                [19,17,'Ladder Ball'],[6,15,'QB54'],[7,5,'Soccer Bocce'],[4,8,'Bean Bag Memory Match'],[11,10,'Break']
+            ]},
+            { time: '1:40pm', matches: [
+                [13,16,'Giant Pong'],[17,5,'BULZiBUCKET'],[1,20,'Mölkky'],[6,14,'Cornhole'],[11,7,'Bocce'],
+                [18,15,'Ladder Ball'],[19,2,'QB54'],[9,8,'Soccer Bocce'],[12,10,'Bean Bag Memory Match'],[4,3,'Break']
+            ]},
+            { time: '2:00pm', matches: [
+                [12,17,'Giant Pong'],[8,1,'BULZiBUCKET'],[19,18,'Mölkky'],[5,13,'Cornhole'],[15,14,'Bocce'],
+                [2,10,'Ladder Ball'],[4,20,'QB54'],[11,3,'Soccer Bocce'],[16,6,'Bean Bag Memory Match'],[9,7,'Break']
+            ]}
+        ];
+
+        let state = { view: 'team-select', selectedTeam: null, wagersSaved: false };
+        let data = { teamNames: {}, wagers: {}, results: {} };
+
+        function loadData() {
+            try {
+                const stored = localStorage.getItem('silvalympics');
+                if (stored) data = JSON.parse(stored);
+            } catch (e) {}
+        }
+
+        function saveData() {
+            try {
+                localStorage.setItem('silvalympics', JSON.stringify(data));
+            } catch (e) {}
+        }
+
+        function getTeamName(num) {
+            return data.teamNames[num] || `Team ${num}`;
+        }
+
+        function getResultKey(time, t1, t2, event) {
+            return `${time}_${t1}_${t2}_${event}`;
+        }
+
+        function getResult(time, t1, t2, event) {
+            return data.results[getResultKey(time, t1, t2, event)];
+        }
+
+        function saveResult(time, t1, t2, event, winner) {
+            data.results[getResultKey(time, t1, t2, event)] = winner;
+            saveData();
+            render();
+        }
+
+        function getTeamSchedule(teamNum) {
+            const schedule = [];
+            SCHEDULE.forEach(slot => {
+                if (slot.matches[0][2] === 'Pizza!') {
+                    schedule.push({ time: slot.time, event: 'Pizza!', opponent: null });
+                    return;
+                }
+                slot.matches.forEach(m => {
+                    if (m[0] === teamNum) {
+                        schedule.push({ time: slot.time, event: m[2], opponent: m[1], team1: m[0], team2: m[1] });
+                    } else if (m[1] === teamNum) {
+                        schedule.push({ time: slot.time, event: m[2], opponent: m[0], team1: m[0], team2: m[1] });
+                    }
+                });
+            });
+            return schedule;
+        }
+
+        function calculateStandings() {
+            const standings = [];
+            for (let i = 1; i <= 20; i++) {
+                let wins = 0, losses = 0, wagerPoints = 0;
+                const teamWagers = data.wagers[i] || {};
+                SCHEDULE.forEach(slot => {
+                    if (slot.matches[0][2] === 'Pizza!') return;
+                    slot.matches.forEach(m => {
+                        if (m[2] === 'Break') return;
+                        const result = getResult(slot.time, m[0], m[1], m[2]);
+                        if (m[0] === i && result !== undefined) {
+                            if (result === m[0]) {
+                                wins++;
+                                wagerPoints += teamWagers[m[2]] || 0;
+                            } else losses++;
+                        } else if (m[1] === i && result !== undefined) {
+                            if (result === m[1]) {
+                                wins++;
+                                wagerPoints += teamWagers[m[2]] || 0;
+                            } else losses++;
+                        }
+                    });
+                });
+                standings.push({ team: i, name: getTeamName(i), wins, losses, wagerPoints });
+            }
+            standings.sort((a, b) => b.wins !== a.wins ? b.wins - a.wins : b.wagerPoints - a.wagerPoints);
+            return standings;
+        }
+
+        function render() {
+            const app = document.getElementById('app');
+            
+            if (state.view === 'team-select') {
+                app.innerHTML = `
+                    <h1 class="title">🏆 10th Annual Silvalympics</h1>
+                    <div class="team-grid">
+                        ${[...Array(20)].map((_, i) => `
+                            <button class="team-btn" onclick="selectTeam(${i+1})">
+                                <div class="team-num">Team ${i+1}</div>
+                                <div class="team-name">${getTeamName(i+1)}</div>
+                            </button>
+                        `).join('')}
+                    </div>
+                `;
+            } else if (state.view === 'menu') {
+                app.innerHTML = `
+                    <button class="back-btn" onclick="state.view='team-select'; render()">← Back to Team Selection</button>
+                    <div class="card">
+                        <h2 class="card-title">${getTeamName(state.selectedTeam)}</h2>
+                        <button class="menu-btn blue" onclick="state.view='team-names'; render()">👥 Enter Team Names</button>
+                        <button class="menu-btn green" onclick="state.view='wagers'; render()">🎯 Set Wagers</button>
+                        <button class="menu-btn purple" onclick="state.view='schedule'; render()">📅 View Schedule</button>
+                        <button class="menu-btn orange" onclick="state.view='results'; render()">🏆 Enter Results</button>
+                        <button class="menu-btn red" onclick="state.view='standings'; render()">📊 View Standings</button>
+                    </div>
+                `;
+            } else if (state.view === 'team-names') {
+                app.innerHTML = `
+                    <button class="back-btn" onclick="state.view='menu'; render()">← Back to Menu</button>
+                    <div class="card">
+                        <h2 class="card-title">Team ${state.selectedTeam} Names</h2>
+                        <div class="input-group">
+                            <label>Player 1</label>
+                            <input type="text" id="name1" placeholder="Enter name">
+                        </div>
+                        <div class="input-group">
+                            <label>Player 2</label>
+                            <input type="text" id="name2" placeholder="Enter name">
+                        </div>
+                        <button class="menu-btn purple" onclick="saveTeamNames()">Save Names</button>
+                    </div>
+                `;
+            } else if (state.view === 'wagers') {
+                const teamWagers = data.wagers[state.selectedTeam] || {};
+                const total = Object.values(teamWagers).reduce((sum, val) => sum + (parseInt(val) || 0), 0);
+                app.innerHTML = `
+                    <button class="back-btn" onclick="state.view='menu'; render()">← Back to Menu</button>
+                    <div class="card">
+                        <h2 class="card-title">Set Wagers</h2>
+                        <p style="text-align:center; color:#666; margin-bottom:15px;">Each wager: 1-20 | Total must equal 50</p>
+                        <div class="total ${total === 50 ? 'valid' : 'invalid'}">Total: ${total} / 50</div>
+                        <div class="scrollable">
+                            ${EVENTS.map(event => `
+                                <div class="wager-row">
+                                    <label>${event}</label>
+                                    <input type="number" min="1" max="20" value="${teamWagers[event] || ''}" 
+                                        onchange="updateWager('${event}', this.value)">
+                                </div>
+                            `).join('')}
+                        </div>
+                        <button class="menu-btn purple ${state.wagersSaved ? 'saved' : ''}" 
+                            onclick="saveWagers()">${state.wagersSaved ? '✓ Wagers Saved!' : 'Save Wagers'}</button>
+                    </div>
+                `;
+            } else if (state.view === 'schedule') {
+                const schedule = getTeamSchedule(state.selectedTeam);
+                app.innerHTML = `
+                    <button class="back-btn" onclick="state.view='menu'; render()">← Back to Menu</button>
+                    <div class="card">
+                        <h2 class="card-title">${getTeamName(state.selectedTeam)} Schedule</h2>
+                        <div class="scrollable">
+                            ${schedule.map(item => `
+                                <div class="schedule-item">
+                                    <div class="schedule-time">${item.time}</div>
+                                    <div class="schedule-event">${item.event}</div>
+                                    ${item.opponent && item.event !== 'Break' ? `<div class="schedule-vs">vs ${getTeamName(item.opponent)}</div>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else if (state.view === 'results') {
+                const schedule = getTeamSchedule(state.selectedTeam);
+                app.innerHTML = `
+                    <button class="back-btn" onclick="state.view='menu'; render()">← Back to Menu</button>
+                    <div class="card">
+                        <h2 class="card-title">Enter Results</h2>
+                        <div class="scrollable">
+                            ${schedule.map(item => {
+                                if (!item.opponent || item.event === 'Break' || item.event === 'Pizza!') return '';
+                                const result = getResult(item.time, item.team1, item.team2, item.event);
+                                const didWin = result === state.selectedTeam;
+                                const didLose = result !== undefined && result !== state.selectedTeam;
+                                return `
+                                    <div class="schedule-item">
+                                        <div class="schedule-time">${item.time} - ${item.event}</div>
+                                        <div class="schedule-vs">vs ${getTeamName(item.opponent)}</div>
+                                        <div class="result-btns">
+                                            <button class="win-btn ${didWin ? 'active' : ''}" 
+                                                onclick="saveResult('${item.time}', ${item.team1}, ${item.team2}, '${item.event}', ${state.selectedTeam})">Win</button>
+                                            <button class="lose-btn ${didLose ? 'active' : ''}" 
+                                                onclick="saveResult('${item.time}', ${item.team1}, ${item.team2}, '${item.event}', ${item.opponent})">Lose</button>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            } else if (state.view === 'standings') {
+                const standings = calculateStandings();
+                app.innerHTML = `
+                    <button class="back-btn" onclick="state.view='menu'; render()">← Back to Menu</button>
+                    <div class="card">
+                        <h2 class="card-title">Live Standings</h2>
+                        <div class="scrollable">
+                            ${standings.map((team, idx) => {
+                                let bgClass = 'standing-red', badgeClass = '', badgeText = '';
+                                if (idx < 6) {
+                                    bgClass = 'standing-green';
+                                    badgeClass = 'badge-green';
+                                    badgeText = '🏆 BYE';
+                                } else if (idx < 10) {
+                                    bgClass = 'standing-blue';
+                                    badgeClass = 'badge-blue';
+                                    badgeText = '🎯 PLAYOFF';
+                                }
+                                return `
+                                    <div class="standing ${bgClass}">
+                                        <div class="standing-left">
+                                            <div class="standing-rank">${idx + 1}</div>
+                                            <div>
+                                                <div class="standing-name">${team.name}</div>
+                                                <div class="standing-record">${team.wins}-${team.losses} (${team.wagerPoints} pts)</div>
+                                            </div>
+                                        </div>
+                                        ${badgeText ? `<div class="standing-badge ${badgeClass}">${badgeText}</div>` : ''}
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        <div class="info-box">
+                            <div><strong>Playoff Format:</strong></div>
+                            <div>🟢 Top 6: First Round BYE</div>
+                            <div>🔵 Seeds 7-10: Wild Card Round</div>
+                            <div>🔴 Seeds 11-20: Eliminated</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function selectTeam(num) {
+            state.selectedTeam = num;
+            state.view = 'menu';
+            render();
+        }
+
+        function saveTeamNames() {
+            const name1 = document.getElementById('name1').value;
+            const name2 = document.getElementById('name2').value;
+            if (name1 && name2) {
+                data.teamNames[state.selectedTeam] = `${name1} & ${name2}`;
+                saveData();
+                state.view = 'menu';
+                render();
+            }
+        }
+
+        function updateWager(event, value) {
+            const val = parseInt(value) || 0;
+            if (val >= 1 && val <= 20) {
+                if (!data.wagers[state.selectedTeam]) data.wagers[state.selectedTeam] = {};
+                data.wagers[state.selectedTeam][event] = val;
+                render();
+            }
+        }
+
+        function saveWagers() {
+            const teamWagers = data.wagers[state.selectedTeam] || {};
+            const total = Object.values(teamWagers).reduce((sum, val) => sum + val, 0);
+            if (total !== 50) {
+                alert('Wagers must total 50!');
+                return;
+            }
+            saveData();
+            state.wagersSaved = true;
+            render();
+            setTimeout(() => {
+                state.wagersSaved = false;
+                render();
+            }, 2000);
+        }
+
+        loadData();
+        render();
+        setInterval(() => {
+            loadData();
+            render();
+        }, 3000);
+    </script>
+</body>
+</html>
