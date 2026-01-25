@@ -113,20 +113,38 @@
             ]}
         ];
 
+        // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
+        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzN-_niwnz1ctUn4QouLCGjVR3x46t2WDaRCqaSJPhSYSwfK8aqUOgerpvG92ABENtaog/exec';
+        
         let state = { view: 'team-select', selectedTeam: null, wagersSaved: false };
         let data = { teamNames: {}, wagers: {}, results: {} };
 
-        function loadData() {
+        async function loadData() {
             try {
-                const stored = localStorage.getItem('silvalympics');
-                if (stored) data = JSON.parse(stored);
-            } catch (e) {}
+                const response = await fetch(BACKEND_URL);
+                const serverData = await response.json();
+                
+                if (serverData.teamNames) data.teamNames = JSON.parse(serverData.teamNames);
+                if (serverData.wagers) data.wagers = JSON.parse(serverData.wagers);
+                if (serverData.results) data.results = JSON.parse(serverData.results);
+            } catch (e) {
+                console.error('Error loading data:', e);
+            }
         }
 
-        function saveData() {
+        async function saveData() {
             try {
-                localStorage.setItem('silvalympics', JSON.stringify(data));
-            } catch (e) {}
+                await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        teamNames: JSON.stringify(data.teamNames),
+                        wagers: JSON.stringify(data.wagers),
+                        results: JSON.stringify(data.results)
+                    })
+                });
+            } catch (e) {
+                console.error('Error saving data:', e);
+            }
         }
 
         function getTeamName(num) {
@@ -397,10 +415,10 @@
 
         loadData();
         render();
-        setInterval(() => {
+        setInterval(async () => {
             // Only refresh if not on input screens
             if (state.view !== 'team-names' && state.view !== 'wagers') {
-                loadData();
+                await loadData();
                 render();
             }
         }, 3000);
