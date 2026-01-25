@@ -235,7 +235,7 @@
             return data.results[getResultKey(time, t1, t2, event)];
         }
 
-        function saveResult(time, t1, t2, event, winner) {
+        async function saveResult(time, t1, t2, event, winner) {
             const key = getResultKey(time, t1, t2, event);
             // If clicking the same result again, undo it
             if (data.results[key] === winner) {
@@ -243,8 +243,7 @@
             } else {
                 data.results[key] = winner;
             }
-            saveData();
-            render();
+            await saveData();
         }
 
         function getTeamSchedule(teamNum) {
@@ -453,12 +452,12 @@
             render();
         }
 
-        function saveTeamNames() {
+        async function saveTeamNames() {
             const name1 = document.getElementById('name1').value;
             const name2 = document.getElementById('name2').value;
             if (name1 && name2) {
                 data.teamNames[state.selectedTeam] = `${name1} & ${name2}`;
-                saveData();
+                await saveData();
                 state.view = 'menu';
                 render();
             }
@@ -473,14 +472,14 @@
             }
         }
 
-        function saveWagers() {
+        async function saveWagers() {
             const teamWagers = data.wagers[state.selectedTeam] || {};
             const total = Object.values(teamWagers).reduce((sum, val) => sum + val, 0);
             if (total !== 50) {
                 alert('Wagers must total 50!');
                 return;
             }
-            saveData();
+            await saveData();
             state.wagersSaved = true;
             render();
             setTimeout(() => {
