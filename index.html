@@ -61,6 +61,10 @@
         .info-box div { margin-bottom: 5px; color: #666; }
         .saved { background: #10b981 !important; }
         .hide { display: none; }
+        .status { position: fixed; top: 10px; right: 10px; padding: 8px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; z-index: 1000; }
+        .status-connected { background: #10b981; color: white; }
+        .status-error { background: #ef4444; color: white; }
+        .status-loading { background: #f59e0b; color: white; }
     </style>
 </head>
 <body>
@@ -114,36 +118,96 @@
         ];
 
         // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzN-_niwnz1ctUn4QouLCGjVR3x46t2WDaRCqaSJPhSYSwfK8aqUOgerpvG92ABENtaog/exec';
+        const BACKEND_URL = 'YOUR_SCRIPT_URL_HERE';
         
-        let state = { view: 'team-select', selectedTeam: null, wagersSaved: false };
+        let state = { view: 'team-select', selectedTeam: null, wagersSaved: false, connectionStatus: 'loading' };
         let data = { teamNames: {}, wagers: {}, results: {} };
 
         async function loadData() {
+            if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
+                state.connectionStatus = 'error';
+                console.error('Please set your Google Apps Script URL!');
+                render();
+                return;
+            }
+            
             try {
-                const response = await fetch(BACKEND_URL);
-                const serverData = await response.json();
+                state.connectionStatus = 'loading';
+                render();
                 
-                if (serverData.teamNames) data.teamNames = JSON.parse(serverData.teamNames);
-                if (serverData.wagers) data.wagers = JSON.parse(serverData.wagers);
-                if (serverData.results) data.results = JSON.parse(serverData.results);
+                const response = await fetch(BACKEND_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const serverData = await response.json();
+                console.log('Loaded data:', serverData);
+                
+                if (serverData.teamNames) {
+                    try {
+                        data.teamNames = JSON.parse(serverData.teamNames);
+                    } catch (e) {
+                        data.teamNames = {};
+                    }
+                }
+                if (serverData.wagers) {
+                    try {
+                        data.wagers = JSON.parse(serverData.wagers);
+                    } catch (e) {
+                        data.wagers = {};
+                    }
+                }
+                if (serverData.results) {
+                    try {
+                        data.results = JSON.parse(serverData.results);
+                    } catch (e) {
+                        data.results = {};
+                    }
+                }
+                
+                state.connectionStatus = 'connected';
+                render();
             } catch (e) {
                 console.error('Error loading data:', e);
+                state.connectionStatus = 'error';
+                render();
             }
         }
 
         async function saveData() {
+            if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
+                console.error('Please set your Google Apps Script URL!');
+                return;
+            }
+            
             try {
-                await fetch(BACKEND_URL, {
+                state.connectionStatus = 'loading';
+                render();
+                
+                const response = await fetch(BACKEND_URL, {
                     method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
                     body: JSON.stringify({
                         teamNames: JSON.stringify(data.teamNames),
                         wagers: JSON.stringify(data.wagers),
                         results: JSON.stringify(data.results)
                     })
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                console.log('Saved data successfully');
+                state.connectionStatus = 'connected';
+                render();
             } catch (e) {
                 console.error('Error saving data:', e);
+                state.connectionStatus = 'error';
+                render();
             }
         }
 
@@ -413,15 +477,15 @@
             }, 2000);
         }
 
-        loadData();
-        render();
-        setInterval(async () => {
-            // Only refresh if not on input screens
-            if (state.view !== 'team-names' && state.view !== 'wagers') {
-                await loadData();
-                render();
-            }
-        }, 3000);
+        (async () => {
+            await loadData();
+            setInterval(async () => {
+                // Only refresh if not on input screens
+                if (state.view !== 'team-names' && state.view !== 'wagers') {
+                    await loadData();
+                }
+            }, 3000);
+        })();
     </script>
 </body>
 </html>
