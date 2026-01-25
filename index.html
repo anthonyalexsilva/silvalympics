@@ -124,7 +124,7 @@
         let data = { teamNames: {}, wagers: {}, results: {} };
 
         async function loadData() {
-            if (BACKEND_URL === 'https://script.google.com/macros/s/AKfycbwfyQME0b3tsbi1P-gUpbj_eqIqX_wQjFeYmMyoNQIDtuaOViqEQfhuH7aMKp9g1ONs6g/exec') {
+            if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
                 state.connectionStatus = 'error';
                 console.error('Please set your Google Apps Script URL!');
                 render();
@@ -188,7 +188,7 @@
         }
 
         async function saveData() {
-            if (BACKEND_URL === 'https://script.google.com/macros/s/AKfycbwfyQME0b3tsbi1P-gUpbj_eqIqX_wQjFeYmMyoNQIDtuaOViqEQfhuH7aMKp9g1ONs6g/exec') {
+            if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
                 console.error('Please set your Google Apps Script URL!');
                 return;
             }
