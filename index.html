@@ -118,13 +118,13 @@
         ];
 
         // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-        const BACKEND_URL = 'YOUR_SCRIPT_URL_HERE';
+        const BACKEND_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLiGwDqtvX33o0UPdUd5IlCUGnNC6xyC776Mvw6OuAn3YpDDXmSGr8rhId_Jtqpjq5oxn42YBxLrlKm1_cnxQV2pckAJbsYhdOyJKI_evpygry1FTN1wkHJEzDeHIRw95DoElfk39WaguEgVBJzmjb4pKplwoQsShHnMzii_r_6x8sZmwOCqDdM-D_AriHHxAClrawRxhbkyWCbFUCju2YWebnkRVXjbtAEssc-8zKGciivVKgDBv-pIixZviNTUwjmqhGQ3k8HvdUEwaVq4lgxDd84RQL7Zcq-TxgH-&lib=M0ghKNWuw-Z_fRMt6mWEDqZXko2toygPk';
         
         let state = { view: 'team-select', selectedTeam: null, wagersSaved: false, connectionStatus: 'loading' };
         let data = { teamNames: {}, wagers: {}, results: {} };
 
         async function loadData() {
-            if (BACKEND_URL === 'https://script.google.com/macros/s/AKfycbwfyQME0b3tsbi1P-gUpbj_eqIqX_wQjFeYmMyoNQIDtuaOViqEQfhuH7aMKp9g1ONs6g/exec') {
+            if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
                 state.connectionStatus = 'error';
                 console.error('Please set your Google Apps Script URL!');
                 render();
@@ -142,26 +142,38 @@
                 }
                 
                 const serverData = await response.json();
-                console.log('Loaded data:', serverData);
+                console.log('Raw server response:', serverData);
+                console.log('teamNames from server:', serverData.teamNames);
+                console.log('wagers from server:', serverData.wagers);
+                console.log('results from server:', serverData.results);
                 
                 if (serverData.teamNames) {
                     try {
-                        data.teamNames = JSON.parse(serverData.teamNames);
+                        const parsed = JSON.parse(serverData.teamNames);
+                        console.log('Parsed teamNames:', parsed);
+                        data.teamNames = parsed;
                     } catch (e) {
+                        console.error('Error parsing teamNames:', e);
                         data.teamNames = {};
                     }
                 }
                 if (serverData.wagers) {
                     try {
-                        data.wagers = JSON.parse(serverData.wagers);
+                        const parsed = JSON.parse(serverData.wagers);
+                        console.log('Parsed wagers:', parsed);
+                        data.wagers = parsed;
                     } catch (e) {
+                        console.error('Error parsing wagers:', e);
                         data.wagers = {};
                     }
                 }
                 if (serverData.results) {
                     try {
-                        data.results = JSON.parse(serverData.results);
+                        const parsed = JSON.parse(serverData.results);
+                        console.log('Parsed results:', parsed);
+                        data.results = parsed;
                     } catch (e) {
+                        console.error('Error parsing results:', e);
                         data.results = {};
                     }
                 }
