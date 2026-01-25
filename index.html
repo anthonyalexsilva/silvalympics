@@ -118,13 +118,13 @@
         ];
 
         // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-        const BACKEND_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLiGwDqtvX33o0UPdUd5IlCUGnNC6xyC776Mvw6OuAn3YpDDXmSGr8rhId_Jtqpjq5oxn42YBxLrlKm1_cnxQV2pckAJbsYhdOyJKI_evpygry1FTN1wkHJEzDeHIRw95DoElfk39WaguEgVBJzmjb4pKplwoQsShHnMzii_r_6x8sZmwOCqDdM-D_AriHHxAClrawRxhbkyWCbFUCju2YWebnkRVXjbtAEssc-8zKGciivVKgDBv-pIixZviNTUwjmqhGQ3k8HvdUEwaVq4lgxDd84RQL7Zcq-TxgH-&lib=M0ghKNWuw-Z_fRMt6mWEDqZXko2toygPk';
+        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwfyQME0b3tsbi1P-gUpbj_eqIqX_wQjFeYmMyoNQIDtuaOViqEQfhuH7aMKp9g1ONs6g/exec';
         
         let state = { view: 'team-select', selectedTeam: null, wagersSaved: false, connectionStatus: 'loading' };
         let data = { teamNames: {}, wagers: {}, results: {} };
 
         async function loadData() {
-            if (BACKEND_URL === 'https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLiGwDqtvX33o0UPdUd5IlCUGnNC6xyC776Mvw6OuAn3YpDDXmSGr8rhId_Jtqpjq5oxn42YBxLrlKm1_cnxQV2pckAJbsYhdOyJKI_evpygry1FTN1wkHJEzDeHIRw95DoElfk39WaguEgVBJzmjb4pKplwoQsShHnMzii_r_6x8sZmwOCqDdM-D_AriHHxAClrawRxhbkyWCbFUCju2YWebnkRVXjbtAEssc-8zKGciivVKgDBv-pIixZviNTUwjmqhGQ3k8HvdUEwaVq4lgxDd84RQL7Zcq-TxgH-&lib=M0ghKNWuw-Z_fRMt6mWEDqZXko2toygPk') {
+            if (BACKEND_URL === 'https://script.google.com/macros/s/AKfycbwfyQME0b3tsbi1P-gUpbj_eqIqX_wQjFeYmMyoNQIDtuaOViqEQfhuH7aMKp9g1ONs6g/exec') {
                 state.connectionStatus = 'error';
                 console.error('Please set your Google Apps Script URL!');
                 render();
