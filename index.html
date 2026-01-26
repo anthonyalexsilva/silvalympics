@@ -235,8 +235,9 @@
                 console.log('Saved data successfully');
                 state.connectionStatus = 'connected';
                 
-                // Wait 1 more second after save completes to ensure server propagated
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // Wait 3 more seconds after save completes to ensure server propagated
+                // This prevents auto-refresh from loading stale data
+                await new Promise(resolve => setTimeout(resolve, 3000));
                 
             } catch (e) {
                 console.error('Error saving data:', e);
@@ -259,7 +260,7 @@
         }
 
         function saveResult(time, t1, t2, event, winner) {
-            console.log('Button clicked - starting saveResult');
+            console.log('Button clicked - starting saveResult, isSaving:', isSaving);
             const key = getResultKey(time, t1, t2, event);
             // If clicking the same result again, undo it
             if (data.results[key] === winner) {
@@ -272,7 +273,7 @@
             render(); // Update UI immediately
             console.log('Calling saveData');
             saveData(); // Save in background (no await)
-            console.log('saveResult done');
+            console.log('saveResult done, isSaving should now be true:', isSaving);
         }
 
         function getTeamSchedule(teamNum) {
