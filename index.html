@@ -122,6 +122,7 @@
         
         let state = { view: 'team-select', selectedTeam: null, wagersSaved: false, connectionStatus: 'loading' };
         let data = { teamNames: {}, wagers: {}, results: {} };
+        let lastUserAction = Date.now();
 
         async function loadData() {
             if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
@@ -243,6 +244,7 @@
             } else {
                 data.results[key] = winner;
             }
+            lastUserAction = Date.now(); // Prevent immediate refresh
             await saveData();
         }
 
@@ -350,6 +352,7 @@
                                 <div class="wager-row">
                                     <label>${event}</label>
                                     <input type="number" min="1" max="20" value="${teamWagers[event] || ''}" 
+                                        oninput="lastUserAction = Date.now()"
                                         onchange="updateWager('${event}', this.value)">
                                 </div>
                             `).join('')}
@@ -457,6 +460,7 @@
             const name2 = document.getElementById('name2').value;
             if (name1 && name2) {
                 data.teamNames[state.selectedTeam] = `${name1} & ${name2}`;
+                lastUserAction = Date.now(); // Prevent immediate refresh
                 await saveData();
                 state.view = 'menu';
                 render();
@@ -479,6 +483,7 @@
                 alert('Wagers must total 50!');
                 return;
             }
+            lastUserAction = Date.now(); // Prevent immediate refresh
             await saveData();
             state.wagersSaved = true;
             render();
@@ -491,8 +496,9 @@
         (async () => {
             await loadData();
             setInterval(async () => {
-                // Only refresh if not on input screens
-                if (state.view !== 'team-names' && state.view !== 'wagers') {
+                // Don't refresh if user typed in the last 5 seconds
+                const timeSinceLastAction = Date.now() - lastUserAction;
+                if (timeSinceLastAction > 5000) {
                     await loadData();
                 }
             }, 3000);
