@@ -198,20 +198,33 @@
                 state.connectionStatus = 'loading';
                 render();
                 
+                const payload = {
+                    teamNames: JSON.stringify(data.teamNames),
+                    wagers: JSON.stringify(data.wagers),
+                    results: JSON.stringify(data.results)
+                };
+                
+                console.log('Saving to server:', payload);
+                
                 const response = await fetch(BACKEND_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        teamNames: JSON.stringify(data.teamNames),
-                        wagers: JSON.stringify(data.wagers),
-                        results: JSON.stringify(data.results)
-                    })
+                    body: JSON.stringify(payload)
                 });
+                
+                console.log('Save response status:', response.status);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log('Save response:', result);
+                
+                if (result.error) {
+                    throw new Error(result.error);
                 }
                 
                 console.log('Saved data successfully');
@@ -352,7 +365,8 @@
                                 <div class="wager-row">
                                     <label>${event}</label>
                                     <input type="number" min="1" max="20" value="${teamWagers[event] || ''}" 
-                                        oninput="lastUserAction = Date.now()"
+                                        onfocus="lastUserAction = Date.now() + 30000"
+                                        onblur="lastUserAction = Date.now()"
                                         onchange="updateWager('${event}', this.value)">
                                 </div>
                             `).join('')}
