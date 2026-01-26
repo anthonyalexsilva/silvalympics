@@ -123,11 +123,18 @@
         let state = { view: 'team-select', selectedTeam: null, wagersSaved: false, connectionStatus: 'loading' };
         let data = { teamNames: {}, wagers: {}, results: {} };
         let lastUserAction = Date.now();
+        let isSaving = false;
 
         async function loadData() {
             if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
                 state.connectionStatus = 'error';
                 console.error('Please set your Google Apps Script URL!');
+                return;
+            }
+            
+            // Don't load if we're currently saving - prevents overwriting local changes
+            if (isSaving) {
+                console.log('Skipping load - save in progress');
                 return;
             }
             
@@ -192,6 +199,7 @@
             }
             
             try {
+                isSaving = true; // Prevent auto-refresh from overwriting
                 state.connectionStatus = 'loading';
                 
                 const payload = {
@@ -228,6 +236,11 @@
             } catch (e) {
                 console.error('Error saving data:', e);
                 state.connectionStatus = 'error';
+            } finally {
+                // Wait a bit before allowing auto-refresh to ensure save propagated
+                setTimeout(() => {
+                    isSaving = false;
+                }, 2000);
             }
         }
 
