@@ -118,7 +118,7 @@
         ];
 
         // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwfyQME0b3tsbi1P-gUpbj_eqIqX_wQjFeYmMyoNQIDtuaOViqEQfhuH7aMKp9g1ONs6g/exec';
+        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbz6vM4Rs_BvIp3XwxzpodTMCDfM1JWQPWYK3iGM3ECX1e8IofEJxyEzgHn_RUuhNU53yw/exec';
         
         let state = { view: 'team-select', selectedTeam: null, wagersSaved: false, connectionStatus: 'loading' };
         let data = { teamNames: {}, wagers: {}, results: {} };
@@ -202,13 +202,13 @@
                 
                 console.log('Saving to server:', payload);
                 
-                const response = await fetch(BACKEND_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload)
+                // Use URL parameters instead of POST body to avoid CORS issues
+                const params = new URLSearchParams({
+                    action: 'save',
+                    data: JSON.stringify(payload)
                 });
+                
+                const response = await fetch(`${BACKEND_URL}?${params.toString()}`);
                 
                 console.log('Save response status:', response.status);
                 
@@ -251,8 +251,8 @@
             } else {
                 data.results[key] = winner;
             }
-            lastUserAction = Date.now(); // Prevent immediate refresh
             await saveData();
+            await loadData(); // Refresh to show updated standings
         }
 
         function getTeamSchedule(teamNum) {
