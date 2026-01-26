@@ -236,9 +236,8 @@
                 console.log('Saved data successfully');
                 state.connectionStatus = 'connected';
                 
-                // Wait 3 more seconds after save completes to ensure server propagated
-                // This prevents auto-refresh from loading stale data
-                await new Promise(resolve => setTimeout(resolve, 3000));
+                // Wait 1 second after save completes
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 
             } catch (e) {
                 console.error('Error saving data:', e);
@@ -533,7 +532,7 @@
                 if (state.view === 'team-select' || state.view === 'menu' || state.view === 'schedule' || state.view === 'results' || state.view === 'standings') {
                     await loadData();
                 }
-            }, 3000);
+            }, 10000); // Changed from 3000ms to 10000ms (10 seconds)
         })();
     </script>
 </body>
