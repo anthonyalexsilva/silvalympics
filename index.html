@@ -198,8 +198,9 @@
                 return;
             }
             
+            isSaving = true; // Prevent auto-refresh from overwriting
+            
             try {
-                isSaving = true; // Prevent auto-refresh from overwriting
                 state.connectionStatus = 'loading';
                 
                 const payload = {
@@ -233,14 +234,15 @@
                 
                 console.log('Saved data successfully');
                 state.connectionStatus = 'connected';
+                
+                // Wait 1 more second after save completes to ensure server propagated
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
             } catch (e) {
                 console.error('Error saving data:', e);
                 state.connectionStatus = 'error';
             } finally {
-                // Wait a bit before allowing auto-refresh to ensure save propagated
-                setTimeout(() => {
-                    isSaving = false;
-                }, 2000);
+                isSaving = false;
             }
         }
 
