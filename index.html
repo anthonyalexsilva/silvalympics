@@ -198,7 +198,8 @@
                 return;
             }
             
-            isSaving = true; // Prevent auto-refresh from overwriting
+            // Don't set isSaving here - it should already be set before calling this
+            console.log('saveData starting, isSaving:', isSaving);
             
             try {
                 state.connectionStatus = 'loading';
@@ -269,11 +270,14 @@
                 data.results[key] = winner;
             }
             
+            // Set isSaving immediately to block auto-refresh
+            isSaving = true;
+            
             console.log('Calling render');
             render(); // Update UI immediately
-            console.log('Calling saveData');
+            console.log('Calling saveData, isSaving:', isSaving);
             saveData(); // Save in background (no await)
-            console.log('saveResult done, isSaving should now be true:', isSaving);
+            console.log('saveResult done');
         }
 
         function getTeamSchedule(teamNum) {
@@ -490,6 +494,7 @@
             if (name1 && name2) {
                 data.teamNames[state.selectedTeam] = `${name1} & ${name2}`;
                 state.view = 'menu';
+                isSaving = true; // Block auto-refresh
                 render(); // Update UI immediately
                 saveData(); // Save in background (no await)
             }
@@ -511,6 +516,7 @@
                 alert('Wagers must total 50!');
                 return;
             }
+            isSaving = true; // Block auto-refresh
             state.wagersSaved = true;
             render(); // Update UI immediately
             saveData(); // Save in background (no await)
