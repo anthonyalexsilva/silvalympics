@@ -359,8 +359,6 @@
                                 <div class="wager-row">
                                     <label>${event}</label>
                                     <input type="number" min="1" max="20" value="${teamWagers[event] || ''}" 
-                                        onfocus="lastUserAction = Date.now() + 30000"
-                                        onblur="lastUserAction = Date.now()"
                                         onchange="updateWager('${event}', this.value)">
                                 </div>
                             `).join('')}
@@ -468,10 +466,9 @@
             const name2 = document.getElementById('name2').value;
             if (name1 && name2) {
                 data.teamNames[state.selectedTeam] = `${name1} & ${name2}`;
-                lastUserAction = Date.now(); // Prevent immediate refresh
                 await saveData();
                 state.view = 'menu';
-                render();
+                await loadData(); // Refresh to show updated data
             }
         }
 
@@ -491,7 +488,6 @@
                 alert('Wagers must total 50!');
                 return;
             }
-            lastUserAction = Date.now(); // Prevent immediate refresh
             await saveData();
             state.wagersSaved = true;
             render();
@@ -504,9 +500,8 @@
         (async () => {
             await loadData();
             setInterval(async () => {
-                // Don't refresh if user typed in the last 5 seconds
-                const timeSinceLastAction = Date.now() - lastUserAction;
-                if (timeSinceLastAction > 5000) {
+                // Only auto-refresh on certain screens to avoid clearing inputs
+                if (state.view === 'team-select' || state.view === 'menu' || state.view === 'schedule' || state.view === 'results' || state.view === 'standings') {
                     await loadData();
                 }
             }, 3000);
