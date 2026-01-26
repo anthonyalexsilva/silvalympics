@@ -124,6 +124,7 @@
         let data = { teamNames: {}, wagers: {}, results: {} };
         let lastUserAction = Date.now();
         let isSaving = false;
+        let lastSaveTime = 0;
 
         async function loadData() {
             if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
@@ -132,9 +133,10 @@
                 return;
             }
             
-            // Don't load if we're currently saving - prevents overwriting local changes
-            if (isSaving) {
-                console.log('Skipping load - save in progress');
+            // Don't load if we saved in the last 5 seconds - prevents overwriting local changes
+            const timeSinceLastSave = Date.now() - lastSaveTime;
+            if (timeSinceLastSave < 5000) {
+                console.log(`Skipping load - saved ${Math.round(timeSinceLastSave/1000)}s ago`);
                 return;
             }
             
@@ -198,8 +200,7 @@
                 return;
             }
             
-            // Don't set isSaving here - it should already be set before calling this
-            console.log('saveData starting, isSaving:', isSaving);
+            console.log('saveData starting');
             
             try {
                 state.connectionStatus = 'loading';
@@ -260,7 +261,7 @@
         }
 
         function saveResult(time, t1, t2, event, winner) {
-            console.log('Button clicked - starting saveResult, isSaving:', isSaving);
+            console.log('Button clicked - starting saveResult');
             const key = getResultKey(time, t1, t2, event);
             // If clicking the same result again, undo it
             if (data.results[key] === winner) {
@@ -269,14 +270,11 @@
                 data.results[key] = winner;
             }
             
-            // Set isSaving immediately to block auto-refresh
-            isSaving = true;
+            // Record save time to block auto-refresh
+            lastSaveTime = Date.now();
             
-            console.log('Calling render');
             render(); // Update UI immediately
-            console.log('Calling saveData, isSaving:', isSaving);
             saveData(); // Save in background (no await)
-            console.log('saveResult done');
         }
 
         function getTeamSchedule(teamNum) {
@@ -493,7 +491,7 @@
             if (name1 && name2) {
                 data.teamNames[state.selectedTeam] = `${name1} & ${name2}`;
                 state.view = 'menu';
-                isSaving = true; // Block auto-refresh
+                lastSaveTime = Date.now(); // Block auto-refresh
                 render(); // Update UI immediately
                 saveData(); // Save in background (no await)
             }
@@ -515,7 +513,7 @@
                 alert('Wagers must total 50!');
                 return;
             }
-            isSaving = true; // Block auto-refresh
+            lastSaveTime = Date.now(); // Block auto-refresh
             state.wagersSaved = true;
             render(); // Update UI immediately
             saveData(); // Save in background (no await)
