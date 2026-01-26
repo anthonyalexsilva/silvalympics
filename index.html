@@ -243,7 +243,7 @@
             return data.results[getResultKey(time, t1, t2, event)];
         }
 
-        async function saveResult(time, t1, t2, event, winner) {
+        function saveResult(time, t1, t2, event, winner) {
             const key = getResultKey(time, t1, t2, event);
             // If clicking the same result again, undo it
             if (data.results[key] === winner) {
@@ -251,8 +251,9 @@
             } else {
                 data.results[key] = winner;
             }
+            
             render(); // Update UI immediately
-            saveData(); // Save in background (don't await)
+            saveData(); // Save in background (no await)
         }
 
         function getTeamSchedule(teamNum) {
@@ -461,15 +462,14 @@
             render();
         }
 
-        async function saveTeamNames() {
+        function saveTeamNames() {
             const name1 = document.getElementById('name1').value;
             const name2 = document.getElementById('name2').value;
             if (name1 && name2) {
                 data.teamNames[state.selectedTeam] = `${name1} & ${name2}`;
                 state.view = 'menu';
                 render(); // Update UI immediately
-                await saveData(); // Save in background
-                await loadData(); // Refresh to confirm
+                saveData(); // Save in background (no await)
             }
         }
 
@@ -482,7 +482,7 @@
             }
         }
 
-        async function saveWagers() {
+        function saveWagers() {
             const teamWagers = data.wagers[state.selectedTeam] || {};
             const total = Object.values(teamWagers).reduce((sum, val) => sum + val, 0);
             if (total !== 50) {
@@ -491,7 +491,7 @@
             }
             state.wagersSaved = true;
             render(); // Update UI immediately
-            await saveData(); // Save in background
+            saveData(); // Save in background (no await)
             setTimeout(() => {
                 state.wagersSaved = false;
                 render();
