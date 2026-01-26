@@ -244,6 +244,7 @@
         }
 
         function saveResult(time, t1, t2, event, winner) {
+            console.log('Button clicked - starting saveResult');
             const key = getResultKey(time, t1, t2, event);
             // If clicking the same result again, undo it
             if (data.results[key] === winner) {
@@ -252,8 +253,11 @@
                 data.results[key] = winner;
             }
             
+            console.log('Calling render');
             render(); // Update UI immediately
+            console.log('Calling saveData');
             saveData(); // Save in background (no await)
+            console.log('saveResult done');
         }
 
         function getTeamSchedule(teamNum) {
@@ -304,6 +308,7 @@
         }
 
         function render() {
+            console.time('render');
             const app = document.getElementById('app');
             
             if (state.view === 'team-select') {
@@ -454,6 +459,7 @@
                     </div>
                 `;
             }
+            console.timeEnd('render');
         }
 
         function selectTeam(num) {
