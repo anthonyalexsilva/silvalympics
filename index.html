@@ -251,8 +251,8 @@
             } else {
                 data.results[key] = winner;
             }
-            await saveData();
-            await loadData(); // Refresh to show updated standings
+            render(); // Update UI immediately
+            saveData(); // Save in background (don't await)
         }
 
         function getTeamSchedule(teamNum) {
@@ -466,9 +466,10 @@
             const name2 = document.getElementById('name2').value;
             if (name1 && name2) {
                 data.teamNames[state.selectedTeam] = `${name1} & ${name2}`;
-                await saveData();
                 state.view = 'menu';
-                await loadData(); // Refresh to show updated data
+                render(); // Update UI immediately
+                await saveData(); // Save in background
+                await loadData(); // Refresh to confirm
             }
         }
 
@@ -488,9 +489,9 @@
                 alert('Wagers must total 50!');
                 return;
             }
-            await saveData();
             state.wagersSaved = true;
-            render();
+            render(); // Update UI immediately
+            await saveData(); // Save in background
             setTimeout(() => {
                 state.wagersSaved = false;
                 render();
