@@ -128,13 +128,11 @@
             if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
                 state.connectionStatus = 'error';
                 console.error('Please set your Google Apps Script URL!');
-                render();
                 return;
             }
             
             try {
                 state.connectionStatus = 'loading';
-                render();
                 
                 const response = await fetch(BACKEND_URL);
                 
@@ -184,7 +182,6 @@
             } catch (e) {
                 console.error('Error loading data:', e);
                 state.connectionStatus = 'error';
-                render();
             }
         }
 
@@ -196,7 +193,6 @@
             
             try {
                 state.connectionStatus = 'loading';
-                render();
                 
                 const payload = {
                     teamNames: JSON.stringify(data.teamNames),
@@ -229,11 +225,9 @@
                 
                 console.log('Saved data successfully');
                 state.connectionStatus = 'connected';
-                render();
             } catch (e) {
                 console.error('Error saving data:', e);
                 state.connectionStatus = 'error';
-                render();
             }
         }
 
