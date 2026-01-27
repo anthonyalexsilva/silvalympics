@@ -1171,15 +1171,15 @@
                     <button class="clear-data-btn" onclick="clearAllData()">Clear Data</button>
                 `;
             } else if (state.view === 'menu') {
+                const scheduleDisabled = !schedulesEnabled;
                 app.innerHTML = `
                     <button class="back-btn" onclick="state.view='team-select'; render()">← Back to Team Selection</button>
                     <div class="card">
                         <h2 class="card-title">${getTeamName(state.selectedTeam)}</h2>
                         <button class="menu-btn blue" onclick="state.view='team-names'; render()">👥 Enter Team Names</button>
                         <button class="menu-btn green" onclick="state.view='wagers'; render()">🎯 Set Wagers</button>
-                        <button class="menu-btn purple ${!schedulesEnabled ? 'disabled' : ''}" 
-                            onclick="${schedulesEnabled ? "state.view='schedule'; render()" : 'return false'}" 
-                            ${!schedulesEnabled ? 'style="pointer-events: none;"' : ''}>
+                        <button class="menu-btn purple ${scheduleDisabled ? 'disabled' : ''}" 
+                            onclick="if(${schedulesEnabled}) { state.view='schedule'; render(); }">
                             📅 View Schedule
                         </button>
                         <button class="menu-btn orange" onclick="state.view='results'; render()">🏆 Enter Results</button>
