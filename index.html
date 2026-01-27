@@ -67,6 +67,9 @@
         .status-loading { background: #f59e0b; color: white; }
         .clear-data-btn { position: fixed; bottom: 10px; right: 10px; padding: 8px 12px; background: #ef4444; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; z-index: 1000; }
         .clear-data-btn:hover { background: #dc2626; }
+        .toggle-schedule-btn { position: fixed; bottom: 10px; right: 110px; padding: 8px 12px; background: #f59e0b; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; z-index: 1000; }
+        .toggle-schedule-btn:hover { background: #ea580c; }
+        .disabled { opacity: 0.5; cursor: not-allowed !important; background: #9ca3af !important; }
     </style>
 </head>
 <body>
@@ -1174,7 +1177,11 @@
                         <h2 class="card-title">${getTeamName(state.selectedTeam)}</h2>
                         <button class="menu-btn blue" onclick="state.view='team-names'; render()">👥 Enter Team Names</button>
                         <button class="menu-btn green" onclick="state.view='wagers'; render()">🎯 Set Wagers</button>
-                        <button class="menu-btn purple" onclick="state.view='schedule'; render()">📅 View Schedule</button>
+                        <button class="menu-btn purple ${!schedulesEnabled ? 'disabled' : ''}" 
+                            onclick="${schedulesEnabled ? "state.view='schedule'; render()" : 'return false'}" 
+                            ${!schedulesEnabled ? 'style="pointer-events: none;"' : ''}>
+                            📅 View Schedule
+                        </button>
                         <button class="menu-btn orange" onclick="state.view='results'; render()">🏆 Enter Results</button>
                         <button class="menu-btn red" onclick="state.view='standings'; render()">📊 View Standings</button>
                         <button class="menu-btn blue" onclick="state.view='overview'; render()" style="background: #6366f1;">📋 Silvalympics Overview</button>
@@ -1204,7 +1211,14 @@
                     <div class="card">
                         <h2 class="card-title">Set Wagers</h2>
                         <p style="text-align:center; color:#666; margin-bottom:15px;">Each wager: 1-20 | Total must equal 50</p>
-                        <div class="total ${total === 50 ? 'valid' : 'invalid'}">Total: ${total} / 50</div>
+                        <div class="mb-4 text-lg font-bold">
+                            Total: <span class="${total === 50 ? 'text-green-600' : 'text-red-600'}">
+                                ${total} / 50
+                            </span>
+                        </div>
+                        <button class="menu-btn" onclick="randomizeWagers()" style="background: #8b5cf6; margin-bottom: 15px;">
+                            🎲 Randomize Wagers
+                        </button>
                         <div class="scrollable">
                             ${EVENTS.map(event => `
                                 <div class="wager-row">
@@ -1307,8 +1321,9 @@
                     </div>
                 `;
             } else if (state.view === 'rules') {
+                const backView = state.returnTo || 'schedule';
                 app.innerHTML = `
-                    <button class="back-btn" onclick="state.view='schedule'; render()">← Back to Schedule</button>
+                    <button class="back-btn" onclick="state.view='${backView}'; render()">← Back to ${backView === 'overview' ? 'Overview' : 'Schedule'}</button>
                     <div class="card">
                         <h2 class="card-title">${state.currentEvent} Rules</h2>
                         <div class="scrollable" style="text-align: left;">
@@ -1322,7 +1337,8 @@
                     <div class="card">
                         <h2 class="card-title">Silvalympics Overview</h2>
                         <div class="scrollable" style="text-align: left;">
-                            ${OVERVIEW_TEXT}
+                            ${OVERVIEW_TEXT.replace(/<li>(Mölkky|Bocce|Giant Pong|Cornhole|BULZiBUCKET|Ladder Ball|QB54|Soccer Bocce|Bean Bag Memory Match)<\/li>/g, 
+                                '<li><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules(\'$1\')">$1</span></li>')}
                         </div>
                     </div>
                 `;
@@ -1342,6 +1358,7 @@
         function showRules(eventName) {
             state.view = 'rules';
             state.currentEvent = eventName;
+            state.returnTo = state.view === 'overview' ? 'overview' : 'schedule';
             render();
         }
 
@@ -1399,6 +1416,39 @@
             } else if (code !== null) {
                 alert('Incorrect code!');
             }
+        }
+        
+        function toggleSchedules() {
+            const code = prompt('Enter 4-digit code to toggle schedules:');
+            if (code === '0820') {
+                schedulesEnabled = !schedulesEnabled;
+                alert(schedulesEnabled ? 'Schedules enabled!' : 'Schedules disabled!');
+                render();
+            } else if (code !== null) {
+                alert('Incorrect code!');
+            }
+        }
+        
+        function randomizeWagers() {
+            const wagerData = {};
+            let remaining = 50;
+            const events = [...EVENTS];
+            
+            // Assign random wagers between 1-20 for first 8 events
+            for (let i = 0; i < 8; i++) {
+                const min = Math.max(1, remaining - (20 * (8 - i)));
+                const max = Math.min(20, remaining - (8 - i));
+                const wager = Math.floor(Math.random() * (max - min + 1)) + min;
+                wagerData[events[i]] = wager;
+                remaining -= wager;
+            }
+            
+            // Last event gets whatever is remaining
+            wagerData[events[8]] = remaining;
+            
+            if (!data.wagers[state.selectedTeam]) data.wagers[state.selectedTeam] = {};
+            data.wagers[state.selectedTeam] = wagerData;
+            render();
         }
 
         (async () => {
