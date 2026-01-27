@@ -1356,9 +1356,9 @@
         }
         
         function showRules(eventName) {
+            state.returnTo = state.view; // Save current view before switching
             state.view = 'rules';
             state.currentEvent = eventName;
-            state.returnTo = state.view === 'overview' ? 'overview' : 'schedule';
             render();
         }
 
