@@ -76,48 +76,48 @@
     <div class="container" id="app"></div>
 
     <script>
-        const EVENTS = ['Molkky', 'Bocce', 'Giant Pong', 'Cornhole', 'BULZiBUCKET', 'Ladder Ball', 'QB54', 'Soccer Bocce', 'Bean Bag Memory Match'];
+        const EVENTS = ['Mölkky', 'Bocce', 'Giant Pong', 'Cornhole', 'BULZiBUCKET', 'Ladder Ball', 'QB54', 'Soccer Bocce', 'Bean Bag Memory Match'];
         
         const SCHEDULE = [
             { time: '10:40am', matches: [
-                [1,2,'Giant Pong'],[3,4,'BULZiBUCKET'],[5,6,'Molkky'],[7,8,'Cornhole'],[9,10,'Bocce'],
+                [1,2,'Giant Pong'],[3,4,'BULZiBUCKET'],[5,6,'Mölkky'],[7,8,'Cornhole'],[9,10,'Bocce'],
                 [11,12,'Ladder Ball'],[13,14,'QB54'],[19,16,'Soccer Bocce'],[17,20,'Bean Bag Memory Match'],[15,18,'Break']
             ]},
             { time: '11:00am', matches: [
-                [4,5,'Giant Pong'],[6,7,'BULZiBUCKET'],[8,9,'Molkky'],[10,11,'Cornhole'],[12,13,'Bocce'],
+                [4,5,'Giant Pong'],[6,7,'BULZiBUCKET'],[8,9,'Mölkky'],[10,11,'Cornhole'],[12,13,'Bocce'],
                 [14,3,'Ladder Ball'],[16,17,'QB54'],[18,15,'Soccer Bocce'],[1,19,'Bean Bag Memory Match'],[20,2,'Break']
             ]},
             { time: '11:20am', matches: [
-                [6,8,'Giant Pong'],[10,12,'BULZiBUCKET'],[14,16,'Molkky'],[18,20,'Cornhole'],[2,4,'Bocce'],
+                [6,8,'Giant Pong'],[10,12,'BULZiBUCKET'],[14,16,'Mölkky'],[18,20,'Cornhole'],[2,4,'Bocce'],
                 [5,7,'Ladder Ball'],[9,11,'QB54'],[1,17,'Soccer Bocce'],[3,15,'Bean Bag Memory Match'],[13,19,'Break']
             ]},
             { time: '11:40am', matches: [
-                [7,9,'Giant Pong'],[11,13,'BULZiBUCKET'],[15,17,'Molkky'],[19,1,'Cornhole'],[3,5,'Bocce'],
+                [7,9,'Giant Pong'],[11,13,'BULZiBUCKET'],[15,17,'Mölkky'],[19,1,'Cornhole'],[3,5,'Bocce'],
                 [4,6,'Ladder Ball'],[8,10,'QB54'],[20,12,'Soccer Bocce'],[2,18,'Bean Bag Memory Match'],[16,14,'Break']
             ]},
             { time: '12:00pm', matches: [
-                [10,14,'Giant Pong'],[18,2,'BULZiBUCKET'],[7,11,'Molkky'],[15,3,'Cornhole'],[19,8,'Bocce'],
+                [10,14,'Giant Pong'],[18,2,'BULZiBUCKET'],[7,11,'Mölkky'],[15,3,'Cornhole'],[19,8,'Bocce'],
                 [16,20,'Ladder Ball'],[5,12,'QB54'],[4,6,'Soccer Bocce'],[9,13,'Bean Bag Memory Match'],[17,1,'Break']
             ]},
             { time: '12:20pm', matches: [[0,0,'Pizza!']] },
             { time: '12:40pm', matches: [
-                [11,15,'Giant Pong'],[19,9,'BULZiBUCKET'],[3,12,'Molkky'],[4,16,'Cornhole'],[20,17,'Bocce'],
+                [11,15,'Giant Pong'],[19,9,'BULZiBUCKET'],[3,12,'Mölkky'],[4,16,'Cornhole'],[20,17,'Bocce'],
                 [8,13,'Ladder Ball'],[1,18,'QB54'],[10,2,'Soccer Bocce'],[14,7,'Bean Bag Memory Match'],[6,5,'Break']
             ]},
             { time: '1:00pm', matches: [
-                [20,19,'Giant Pong'],[15,16,'BULZiBUCKET'],[4,10,'Molkky'],[2,17,'Cornhole'],[18,6,'Bocce'],
+                [20,19,'Giant Pong'],[15,16,'BULZiBUCKET'],[4,10,'Mölkky'],[2,17,'Cornhole'],[18,6,'Bocce'],
                 [1,9,'Ladder Ball'],[7,3,'QB54'],[14,13,'Soccer Bocce'],[11,5,'Bean Bag Memory Match'],[8,12,'Break']
             ]},
             { time: '1:20pm', matches: [
-                [18,3,'Giant Pong'],[14,20,'BULZiBUCKET'],[2,13,'Molkky'],[9,12,'Cornhole'],[1,16,'Bocce'],
+                [18,3,'Giant Pong'],[14,20,'BULZiBUCKET'],[2,13,'Mölkky'],[9,12,'Cornhole'],[1,16,'Bocce'],
                 [19,17,'Ladder Ball'],[6,15,'QB54'],[7,5,'Soccer Bocce'],[4,8,'Bean Bag Memory Match'],[11,10,'Break']
             ]},
             { time: '1:40pm', matches: [
-                [13,16,'Giant Pong'],[17,5,'BULZiBUCKET'],[1,20,'Molkky'],[6,14,'Cornhole'],[11,7,'Bocce'],
+                [13,16,'Giant Pong'],[17,5,'BULZiBUCKET'],[1,20,'Mölkky'],[6,14,'Cornhole'],[11,7,'Bocce'],
                 [18,15,'Ladder Ball'],[19,2,'QB54'],[9,8,'Soccer Bocce'],[12,10,'Bean Bag Memory Match'],[4,3,'Break']
             ]},
             { time: '2:00pm', matches: [
-                [12,17,'Giant Pong'],[8,1,'BULZiBUCKET'],[19,18,'Molkky'],[5,13,'Cornhole'],[15,14,'Bocce'],
+                [12,17,'Giant Pong'],[8,1,'BULZiBUCKET'],[19,18,'Mölkky'],[5,13,'Cornhole'],[15,14,'Bocce'],
                 [2,10,'Ladder Ball'],[4,20,'QB54'],[11,3,'Soccer Bocce'],[16,6,'Bean Bag Memory Match'],[9,7,'Break']
             ]}
         ];
@@ -133,21 +133,21 @@
         let schedulesEnabled = true;
         
         const EVENT_RULES = {
-            'Molkky': `<h3>General</h3>
+            'Mölkky': `<h3>General</h3>
 <ul>
 <li>One game, winner take all.</li>
-<li>Game consists of twelve skittles (i.e. pins) numbered from 1 to 12 and one Molkky throwing skittle.</li>
+<li>Game consists of twelve skittles (i.e. pins) numbered from 1 to 12 and one Mölkky throwing skittle.</li>
 <li>Game is 2-on-2.</li>
 <li>Object is to get exactly 50 points.</li>
-<li>The Molkky throwing skittle may be thrown any way, for example underhand, overhand, or sideways. It may also bounce on the grass.</li>
+<li>The Mölkky throwing skittle may be thrown any way, for example underhand, overhand, or sideways. It may also bounce on the grass.</li>
 </ul>
 <br>
 
 <h3>Order of Play</h3>
 <ul>
 <li>The game begins with rocks paper scissors shoot (first to win one).</li>
-<li>One of the teammates from the team that wins starts the game by tossing the Molkky throwing skittle.</li>
-<li>One of the teammates from the other team then tosses the Molkky throwing skittle.</li>
+<li>One of the teammates from the team that wins starts the game by tossing the Mölkky throwing skittle.</li>
+<li>One of the teammates from the other team then tosses the Mölkky throwing skittle.</li>
 <li>Teams and teammates continue rotating tosses for the rest of the game.</li>
 </ul>
 <br>
@@ -158,19 +158,19 @@
 </ul>
 
 <div style="text-align: center; margin: 20px 0;">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAACWCAYAAAA8AXHiAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAF8klEQVR4nO3dS3LbMBAFUIry/a9sL1J2sqgkMh8GBvqh31NVcZxYljgzL0MQlPjz5+/XH8D/5a/0DwD/R1gIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSHgL3+6Qp7WGu7sAAAAAElFTkSuQmCC" alt="Molkky Setup" style="max-width: 200px; height: auto; border: 1px solid #ddd; border-radius: 8px;">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAACWCAYAAAA8AXHiAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAF8klEQVR4nO3dS3LbMBAFUIry/a9sL1J2sqgkMh8GBvqh31NVcZxYljgzL0MQlPjz5+/XH8D/5a/0DwD/R1gIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSHgL3+6Qp7WGu7sAAAAAElFTkSuQmCC" alt="Mölkky Setup" style="max-width: 200px; height: auto; border: 1px solid #ddd; border-radius: 8px;">
 </div>
 
 <ul>
 <li>After a throw, fallen skittles are put upright <u>at the place where they fell</u>. As a result, the skittles are naturally spread out as the game progresses.</li>
-<li>The throwing line is 10 feet from the front of the skittle formation. The Molkky throwing skittle may be thrown from anywhere behind the throwing line, including from either side.</li>
+<li>The throwing line is 10 feet from the front of the skittle formation. The Mölkky throwing skittle may be thrown from anywhere behind the throwing line, including from either side.</li>
 </ul>
 <br>
 
 <h3>Scoring</h3>
 <ul>
 <li>If one skittle falls, the score is equal to the number on the pin. When more than one skittle falls, the score is equal to the number of fallen skittles.</li>
-<li>A skittle is not considered fallen if it is leaning on another skittle or on the Molkky throwing skittle.</li>
+<li>A skittle is not considered fallen if it is leaning on another skittle or on the Mölkky throwing skittle.</li>
 <li>The game ends when the first team reaches exactly 50 points.</li>
 <li>If the team scores over 50, that team's score is lowered to 25.</li>
 <li>If a team misses (has no score) three times in a row, that team's score is lowered to 0.</li>
@@ -538,349 +538,6 @@
 
 <p><em>Please put the balls and pallina next to each other after you complete your game so the next teams can play.</em></p>`
         };
-            'Molkky': `<h3>General</h3>
-<ul>
-<li>One game, winner take all.</li>
-<li>Game consists of twelve skittles (i.e. pins) numbered from 1 to 12 and one Molkky throwing skittle.</li>
-<li>Game is 2-on-2.</li>
-<li>Object is to get exactly 50 points.</li>
-<li>The Molkky throwing skittle may be thrown any way, for example underhand, overhand, or sideways. It may also bounce on the grass.</li>
-</ul>
-
-<h3>Order of Play</h3>
-<ul>
-<li>The game begins with rocks paper scissors shoot (first to win one).</li>
-<li>One of the teammates from the team that wins starts the game by tossing the Molkky throwing skittle.</li>
-<li>One of the teammates from the other team then tosses the Molkky throwing skittle.</li>
-<li>Teams and teammates continue rotating tosses for the rest of the game.</li>
-</ul>
-
-<h3>Setup</h3>
-<ul>
-<li>At the beginning of the game, the skittles are placed in a specific formation.</li>
-<li>After a throw, fallen skittles are put upright at the place where they fell. As a result, the skittles are naturally spread out as the game progresses.</li>
-<li>The throwing line is 10 feet from the front of the skittle formation. The Molkky throwing skittle may be thrown from anywhere behind the throwing line, including from either side.</li>
-</ul>
-
-<h3>Scoring</h3>
-<ul>
-<li>If one skittle falls, the score is equal to the number on the pin. When more than one skittle falls, the score is equal to the number of fallen skittles.</li>
-<li>A skittle is not considered fallen if it is leaning on another skittle or on the Molkky throwing skittle.</li>
-<li>The game ends when the first team reaches exactly 50 points.</li>
-<li>If the team scores over 50, that team's score is lowered to 25.</li>
-<li>If a team misses (has no score) three times in a row, that team's score is lowered to 0.</li>
-</ul>
-
-<p><strong>20-Minute Rule:</strong> If time expires and neither team has reached exactly 50 points, then the first team that exceeded 50 points wins. If neither team has exceeded 50 points, then whichever team has the most points wins.</p>
-
-<p><em>Please reset the Molkky skittles after you complete your game so the next teams can play.</em></p>`,
-
-            'Bocce': `<h3>General</h3>
-<ul>
-<li>One game, winner take all.</li>
-<li>First team to 7 points wins the game.</li>
-<li>Bocce is played with eight large balls and one smaller target ball called a pallina.</li>
-<li>There are four balls per team and they are made of a different color to distinguish the balls of one team from those of the other team.</li>
-<li>Each player throws two balls.</li>
-</ul>
-
-<h3>Order of Play</h3>
-<ul>
-<li>The game begins with rocks paper scissors shoot (first to win one). The team that wins can choose to either have the first toss of the pallina or the color of the balls they will use.</li>
-<li>To start the game, the pallina is rolled or tossed roughly 20 to 40 feet (~10 to 20 steps). A marker is dropped where the pallina was tossed from.</li>
-<li>The player tossing the pallina must deliver the first Bocce ball. All balls are tossed from the marker.</li>
-<li>The opposing team then delivers their balls until one of its Bocce balls is closer to the pallina or has thrown all of its balls.</li>
-<li>The "nearest ball" rule governs the sequence of thrown balls.</li>
-<li>After both teams have exhausted all their balls, a frame is over and points are awarded.</li>
-<li>The team that was awarded points in the previous frame begins the next frame by tossing the pallina into play.</li>
-</ul>
-
-<h3>Scoring</h3>
-<ul>
-<li>At the end of each frame, points will be awarded.</li>
-<li>Only one team scores in a frame. A team scores between 1 and 4 points per frame.</li>
-<li>One point is awarded for each ball that is closer to the pallina than the closest ball of the opposing team.</li>
-<li>Only balls which are distinguishably closer to the pallina than any of the opponent's balls are awarded points.</li>
-<li>All measurements should be made from the center of the pallina to the edge of a Bocce ball.</li>
-<li>If a Bocce ball is touching the pallina, an extra point is awarded.</li>
-</ul>
-
-<p><strong>20-Minute Rule:</strong> If the allotted time expires, the team with the highest point total wins.</p>
-
-<p><em>Please put the balls and pallina next to each other after you complete your game so the next teams can play.</em></p>`,
-
-            'Giant Pong': `<h3>General</h3>
-<ul>
-<li>One game, winner take all.</li>
-<li>Ten buckets are arranged in a triangle on each side of the court. The distance between the two front buckets shall be 15 feet. All buckets are partially filled with water.</li>
-<li>Each team takes turns throwing two balls (one per teammate) into the other's buckets.</li>
-<li>Once a ball lands in a bucket (aka "hits" the bucket), that bucket is taken away.</li>
-<li>If both teammates hit buckets, the balls are returned and they get to shoot again.</li>
-<li>The team that successfully hits all of the opponent's buckets first wins the game.</li>
-<li>If the defending team catches or swats the ball before it hits the ground or a bucket, one bucket is removed of the throwing team's choice.</li>
-<li>All throws must be taken from behind the bucket line (the line where the last row of buckets are set up).</li>
-</ul>
-
-<h3>First Throw</h3>
-<ul>
-<li>First throw is decided by "Eyes." A player from each team throws the ball while maintaining eye contact with their opponent throughout their toss.</li>
-<li>If both players miss or both players make it, their partners now throw.</li>
-<li>This goes on until one person makes it and their opponent does not.</li>
-<li>The hit bucket is not removed.</li>
-</ul>
-
-<h3>Special Rules</h3>
-<ul>
-<li>Each team can twice request the buckets to be re-racked at the start of their turn.</li>
-<li>If the ball hits off the ground and then goes into a bucket, the bucket that the ball goes into is removed, as well as another bucket of the defending player's choice. If there are only two buckets remaining, the bounce only counts as one cup.</li>
-<li>If the ball gets wedged between multiple buckets, it counts as a miss (i.e. no buckets are removed).</li>
-<li>If one bucket is hit and the teammate hits the same bucket before the first ball is pulled out, this is worth three cups (two additional chosen by the defending team).</li>
-</ul>
-
-<h3>Rebuttal & Overtime</h3>
-<ul>
-<li>After the last bucket is hit, each player from the losing team has a chance to hit the remaining buckets (aka rebuttal). Each player shoots until they miss.</li>
-<li>If the players manage to hit all remaining buckets, the game goes into a three bucket overtime.</li>
-<li>Three cups are placed back into a triangle shape. The would-have-been winners shoot first.</li>
-<li>There are no re-racks permitted in overtime. Rebuttals are allowed in overtime.</li>
-</ul>
-
-<p><strong>20-Minute Rule:</strong> If the allotted time expires, the team with the fewest buckets remaining wins.</p>
-
-<p><em>Please reset the buckets after you complete your game so the next teams can play.</em></p>`,
-
-            'Cornhole': `<h3>General</h3>
-<ul>
-<li>One game, winner take all.</li>
-<li>First team to reach or exceed 21 points wins the game.</li>
-<li>Boards are placed 21 feet apart (front edge to front edge of each board).</li>
-<li>One player from each team is on each side.</li>
-<li>Round consists of one person from each team throwing four cornhole bags. The players will alternate tosses.</li>
-<li>Whichever team had the last bag on the board or in the hole will then begin the next round. The two opponents will alternate throws.</li>
-</ul>
-
-<h3>Scoring</h3>
-<ul>
-<li>Only one team receives points each round.</li>
-<li>A team receives 1 point for each bag on the board.</li>
-<li>A team receives 3 points for each bag in the hole.</li>
-<li>After adding each team's score, subtract the lesser score from the greater score to determine the total points for the team that scored more points.</li>
-</ul>
-
-<h3>Notes</h3>
-<ul>
-<li>If a bag touches grass at any point, it is deemed dead and does not count even if it lands on the board.</li>
-<li>When tossing a bag, the thrower's feet must not cross the front edge of the board.</li>
-<li>Rocks paper scissors shoot (first to win one) to see which team tosses the first bag.</li>
-<li>Team does NOT have to win by two or more points. First team to 21 wins.</li>
-</ul>
-
-<p><strong>20-Minute Rule:</strong> If neither team reaches 21 points at the end of 20 minutes, the team with the most points wins.</p>`,
-
-            'BULZiBUCKET': `<h3>General</h3>
-<ul>
-<li>One game, winner take all.</li>
-<li>First team to reach or exceed 21 points wins the game. Must win by 2 or more points.</li>
-<li>Buckets are placed 15 feet apart.</li>
-<li>One player from each team is on each side.</li>
-<li>Round consists of one person from each team throwing three bags. The players will alternate tosses.</li>
-<li>The last bag thrown each round by each team member is known as the "Money Bag" and is worth double points.</li>
-<li>Whichever team won the previous round begins the next round. The two opponents will alternate throws.</li>
-</ul>
-
-<h3>Scoring</h3>
-<ul>
-<li>Only one team receives points each round.</li>
-<li>A team receives:
-  <ul>
-    <li>1 point for landing the bag into the large bottom bucket.</li>
-    <li>2 points for the middle tier bucket.</li>
-    <li>3 points for the small top bucket.</li>
-  </ul>
-</li>
-<li>The Money Bag is worth double points.</li>
-<li>After adding each team's score, subtract the lesser score from the greater score to determine the total points for the team that scored more points.</li>
-</ul>
-
-<h3>Assisting ("Hacking")</h3>
-<ul>
-<li>Bags that fly over or to the side of the bucket may be hacked by a player on the same team into the buckets.</li>
-<li>Hacking may be done with the player's feet only.</li>
-<li>Hacking assists may only occur behind or to the side of the bucket and NOT over the top of the bucket in back board fashion.</li>
-<li>If any part of the body touches the bucket during an assist, the bag thrown must be pulled if scored and NO points are awarded for that toss.</li>
-</ul>
-
-<h3>Notes</h3>
-<ul>
-<li>If a bag touches grass at any point, it is deemed dead and does not count even if it lands in a bucket.</li>
-<li>When tossing a bag, the thrower's feet must be behind the bucket.</li>
-<li>Rocks paper scissors shoot (first to win one) to see which team tosses the first bag.</li>
-</ul>
-
-<p><strong>20-Minute Rule:</strong> If neither team reaches 21 points at the end of 20 minutes, the team with the most points wins.</p>`,
-
-            'Ladder Ball': `<h3>General</h3>
-<ul>
-<li>One game, winner take all.</li>
-<li>First team to reach or exceed 21 points wins the game. Must win by 2 or more points.</li>
-<li>Ladders are placed 15 feet apart.</li>
-<li>One player from each team is on each side.</li>
-<li>The goal of the game is to throw each bola at your opponent's ladder rungs and have them stick or wrap around the structure.</li>
-<li>Each player throws all three of their bolas before another player can go.</li>
-<li>Whichever team won the previous round begins the next round.</li>
-</ul>
-
-<h3>Scoring</h3>
-<ul>
-<li>Only one team receives points each round.</li>
-<li>A team receives:
-  <ul>
-    <li>3 points for bola on the top rung.</li>
-    <li>2 points for bola on the middle rung.</li>
-    <li>1 point for bola on the bottom rung.</li>
-  </ul>
-</li>
-<li>After adding each team's score, subtract the lesser score from the greater score to determine the total points for the team that scored more points.</li>
-</ul>
-
-<h3>Notes</h3>
-<ul>
-<li>Bolas must be thrown from behind the ladder.</li>
-<li>Bolas can be tossed any way the player chooses (e.g. does not have to be underhand).</li>
-<li>Each bola must be thrown separately.</li>
-<li>Bolas that touch or bounce off the grass still count for points if they end up on a ladder rung.</li>
-<li>If one bola is hanging from another bola, it counts for the same points as the bola it is hanging onto.</li>
-<li>If a bola is knocked off a rung, it will not count toward the end-of-round score.</li>
-<li>Rocks paper scissors shoot (first to win one) to see which team goes first.</li>
-</ul>
-
-<p><strong>20-Minute Rule:</strong> If neither team reaches 21 points at the end of 20 minutes, the team with the most points wins.</p>`,
-
-            'Bean Bag Memory Match': `<h3>General</h3>
-<ul>
-<li>One game, winner take all.</li>
-<li>First team to flip over every lid with a Match wins.</li>
-<li>Both players are on the same side.</li>
-<li>Each round consists of one person from each team throwing two bean bags.</li>
-</ul>
-
-<h3>Setup</h3>
-<ul>
-<li>At the beginning of the game, the lids are placed face down in a formation. 4 lids are in the first row, 4 in the second row, and 4 in the third row. There are roughly 2 to 4 inches of space between each lid and 8 feet separate the front of the lid structures.</li>
-<li>Lids are positioned randomly without looking at what picture is underneath.</li>
-</ul>
-
-<h3>Order of Play</h3>
-<ul>
-<li>The game begins with rocks paper scissors shoot (first to win one). The team that wins ("Team A") will toss first.</li>
-<li>Standing behind their own lids, the first player from Team A tosses two bean bags at Team B's lids.</li>
-<li>The first player from Team B tosses two bean bags at Team A's lids.</li>
-<li>The second player from Team A tosses two bean bags at Team B's lids.</li>
-<li>The second player from Team B tosses two bean bags at Team A's lids.</li>
-<li>Play continues in this order until the end of the game.</li>
-</ul>
-
-<h3>Flipping Lids, Matches, and Mismatches</h3>
-<ul>
-<li>The first lid that the bean bag hits in the air is flipped upright, revealing the picture.</li>
-<li>This lid remains upright until another lid is hit and flipped upright.</li>
-<li>If the next lid hit and flipped upright matches the other flipped lid, this is a Match and the two lids remain upright for the remainder of the game.</li>
-<li>If the next lid hit and flipped upright does not match the other flipped lid, this is a Mismatch and both lids are flipped back down revealing the pictures again. Remember what the pictures are!</li>
-<li>If there is a lid flipped upright at the end of a turn (after two bean bag tosses), it remains upright for the next turn.</li>
-</ul>
-
-<h3>Notes</h3>
-<ul>
-<li>If the bean bag hits the ground first, it is dead.</li>
-<li>If the bean bag hits a lid and the ground simultaneously, it counts as a lid hit (not a dead bag).</li>
-<li>If the bean bag hits a lid and then falls off and/or is touching the ground, it counts as a lid hit.</li>
-<li>If the bean bag hits one lid and then ends up on another lid, the first lid is flipped (not the second).</li>
-<li>If a bean bag hits two lids simultaneously, whichever lid it ends up on (or is covering more of) is the one considered hit.</li>
-<li>If a bean bag hits a lid that is already upright, it is a dead bag (and the lid remains upright).</li>
-<li>First team to flip all lids with Matches wins. There is no last chances or overtime.</li>
-</ul>
-
-<p><strong>20-Minute Rule:</strong> If neither team flips all lids by the 20 minute mark, whichever team has more Matches wins. If the teams are tied in Matches, then play continues until one team gets another Match.</p>`,
-
-            'QB54': `<h3>General</h3>
-<ul>
-<li>One game, winner take all.</li>
-<li>First team to reach or exceed 54 points wins the game (with the exception of a Hail Mary). Must win by 2 or more points.</li>
-<li>Chairs are placed 30 feet apart.</li>
-<li>Teammates play on the same side together.</li>
-<li>Players alternate throws.</li>
-</ul>
-
-<h3>Order of Play</h3>
-<ul>
-<li>The game begins with rocks paper scissors shoot (first to win one). The team that wins will throw first.</li>
-<li>Standing behind the chair, the player throws the football at the opposing chair.</li>
-<li>Play alternates with each team throwing only once (both teammates do not throw the ball on each turn).</li>
-</ul>
-
-<h3>Scoring</h3>
-<ul>
-<li>3 points for Completion -- Hit any part of the chair/goalposts before the ball hits the ground.</li>
-<li>6 points for Touchdown -- Throw the ball into the basket before the ball hits the ground. Defense cannot try to knock the ball out of the basket.</li>
-<li>1 point for Extra Point after TD -- Kick the ball through the uprights. Ball is kicked at the midway point between the two chairs.</li>
-<li>2 points for Safety -- If the thrown ball bounces off the ground and into the basket, the defending team gets 2 points.</li>
-<li>3 points for Interception -- Defensive team catches a rebound off of the chair. The ball must be in the air off of a bounce to be intercept.</li>
-<li>3 points for Defensive Interference -- Defensive team interferes with a ball that likely would have hit the chair before it makes contact with the chair.</li>
-<li>The Fitz -- If you kick the ball into the basket during an Extra Point after TD you win the game immediately.</li>
-<li>First team to 54 points (by 2) wins.</li>
-</ul>
-
-<h3>Hail Mary</h3>
-<ul>
-<li>Losing team gets one Hail Mary chance.</li>
-<li>Subtract the winning score by the losing score to determine the steps (e.g. 54 points - 34 points = 20).</li>
-<li>Take the number of steps with feet touching away from your chair. This is the place to throw the Hail Mary.</li>
-<li>If a touchdown is thrown from the Hail Mary pass you win. A miss and you lose.</li>
-</ul>
-
-<h3>Notes</h3>
-<ul>
-<li>Defensive team does not have to stand behind the chair -- players can stand on the side or even in front of (but not blocking) the chair.</li>
-<li>Defensive players cannot touch the ball in midair if it has a reasonable chance of hitting the chair.</li>
-<li>Teams switch sides when the leading team reaches 12, 24, 36, and 48 points.</li>
-</ul>
-
-<p><strong>20-Minute Rule:</strong> If neither team reaches 54 points at the end of 20 minutes, the team with the most points wins (pending Hail Mary). Losing team still gets their Hail Mary chance.</p>`,
-
-            'Soccer Bocce': `<h3>General</h3>
-<ul>
-<li>One game, winner take all.</li>
-<li>First team to 7 points wins the game.</li>
-<li>Soccer Bocce is played with eight small soccer balls and one smaller target called a pallina.</li>
-<li>There are four soccer balls per team and they are made of a different color (red and yellow) to distinguish the balls of one team from those of the other team.</li>
-<li>Each player kicks two balls.</li>
-</ul>
-
-<h3>Order of Play</h3>
-<ul>
-<li>The game begins with rocks paper scissors shoot (first to win one). The team that wins can choose to either have the first toss of the pallina or the color of the balls they will use.</li>
-<li>To start the game, the pallina is rolled or tossed roughly 20 to 40 feet (~10 to 20 steps). A marker is dropped where the pallina was tossed from.</li>
-<li>The player tossing the pallina must kick the first soccer ball. All balls are kicked from the marker.</li>
-<li>The opposing team then kicks their balls until one of its soccer balls is closer to the pallina or has kicked all of its balls.</li>
-<li>The "nearest ball" rule governs the sequence of kicked balls.</li>
-<li>After both teams have exhausted all their balls, a frame is over and points are awarded.</li>
-<li>The team that was awarded points in the previous frame begins the next frame by tossing the pallina into play.</li>
-</ul>
-
-<h3>Scoring</h3>
-<ul>
-<li>At the end of each frame, points will be awarded.</li>
-<li>Only one team scores in a frame. A team scores between 1 and 4 points per frame.</li>
-<li>One point is awarded for each ball that is closer to the pallina than the closest ball of the opposing team.</li>
-<li>Only balls which are distinguishably closer to the pallina than any of the opponent's balls are awarded points.</li>
-<li>All measurements should be made from the center of the pallina to the edge of a soccer ball.</li>
-<li>If a soccer ball is touching the pallina, an extra point is awarded.</li>
-</ul>
-
-<p><strong>20-Minute Rule:</strong> If the allotted time expires, the team with the highest point total wins.</p>
-
-<p><em>Please put the balls and pallina next to each other after you complete your game so the next teams can play.</em></p>`
-        };
         
         const OVERVIEW_TEXT = `<h3>General</h3>
 <ul>
@@ -896,7 +553,7 @@
 
 <h3>Events</h3>
 <ul>
-<li>Molkky</li>
+<li>Mölkky</li>
 <li>Bocce</li>
 <li>Giant Pong</li>
 <li>Cornhole</li>
@@ -1171,17 +828,17 @@
                     <button class="clear-data-btn" onclick="clearAllData()">Clear Data</button>
                 `;
             } else if (state.view === 'menu') {
+                const scheduleBtn = schedulesEnabled 
+                    ? '<button class="menu-btn purple" onclick="state.view=\'schedule\'; render()">📅 View Schedule</button>'
+                    : '<button class="menu-btn purple disabled" style="pointer-events: none;">📅 View Schedule</button>';
+                
                 app.innerHTML = `
                     <button class="back-btn" onclick="state.view='team-select'; render()">← Back to Team Selection</button>
                     <div class="card">
                         <h2 class="card-title">${getTeamName(state.selectedTeam)}</h2>
                         <button class="menu-btn blue" onclick="state.view='team-names'; render()">👥 Enter Team Names</button>
                         <button class="menu-btn green" onclick="state.view='wagers'; render()">🎯 Set Wagers</button>
-                        <button class="menu-btn purple ${!schedulesEnabled ? 'disabled' : ''}" 
-                            onclick="${schedulesEnabled ? "state.view='schedule'; render()" : 'return false'}" 
-                            ${!schedulesEnabled ? 'style="pointer-events: none;"' : ''}>
-                            📅 View Schedule
-                        </button>
+                        ${scheduleBtn}
                         <button class="menu-btn orange" onclick="state.view='results'; render()">🏆 Enter Results</button>
                         <button class="menu-btn red" onclick="state.view='standings'; render()">📊 View Standings</button>
                         <button class="menu-btn blue" onclick="state.view='overview'; render()" style="background: #6366f1;">📋 Silvalympics Overview</button>
@@ -1206,16 +863,13 @@
             } else if (state.view === 'wagers') {
                 const teamWagers = data.wagers[state.selectedTeam] || {};
                 const total = Object.values(teamWagers).reduce((sum, val) => sum + (parseInt(val) || 0), 0);
+                const totalClass = total === 50 ? 'valid' : 'invalid';
                 app.innerHTML = `
                     <button class="back-btn" onclick="state.view='menu'; render()">← Back to Menu</button>
                     <div class="card">
                         <h2 class="card-title">Set Wagers</h2>
                         <p style="text-align:center; color:#666; margin-bottom:15px;">Each wager: 1-20 | Total must equal 50</p>
-                        <div class="mb-4 text-lg font-bold">
-                            Total: <span class="${total === 50 ? 'text-green-600' : 'text-red-600'}">
-                                ${total} / 50
-                            </span>
-                        </div>
+                        <div class="total ${totalClass}">Total: ${total} / 50</div>
                         <button class="menu-btn" onclick="randomizeWagers()" style="background: #8b5cf6; margin-bottom: 15px;">
                             🎲 Randomize Wagers
                         </button>
@@ -1337,7 +991,7 @@
                     <div class="card">
                         <h2 class="card-title">Silvalympics Overview</h2>
                         <div class="scrollable" style="text-align: left;">
-                            ${OVERVIEW_TEXT.replace(/<li>(Molkky|Bocce|Giant Pong|Cornhole|BULZiBUCKET|Ladder Ball|QB54|Soccer Bocce|Bean Bag Memory Match)<\/li>/g, 
+                            ${OVERVIEW_TEXT.replace(/<li>(Mölkky|Bocce|Giant Pong|Cornhole|BULZiBUCKET|Ladder Ball|QB54|Soccer Bocce|Bean Bag Memory Match)<\/li>/g, 
                                 '<li><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules(\'$1\')">$1</span></li>')}
                         </div>
                     </div>
@@ -1356,9 +1010,9 @@
         }
         
         function showRules(eventName) {
+            state.returnTo = state.view; // Save current view before switching
             state.view = 'rules';
             state.currentEvent = eventName;
-            state.returnTo = state.view === 'overview' ? 'overview' : 'schedule';
             render();
         }
 
