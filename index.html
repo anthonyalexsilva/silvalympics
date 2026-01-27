@@ -76,48 +76,48 @@
     <div class="container" id="app"></div>
 
     <script>
-        const EVENTS = ['Mölkky', 'Bocce', 'Giant Pong', 'Cornhole', 'BULZiBUCKET', 'Ladder Ball', 'QB54', 'Soccer Bocce', 'Bean Bag Memory Match'];
+        const EVENTS = ['Molkky', 'Bocce', 'Giant Pong', 'Cornhole', 'BULZiBUCKET', 'Ladder Ball', 'QB54', 'Soccer Bocce', 'Bean Bag Memory Match'];
         
         const SCHEDULE = [
             { time: '10:40am', matches: [
-                [1,2,'Giant Pong'],[3,4,'BULZiBUCKET'],[5,6,'Mölkky'],[7,8,'Cornhole'],[9,10,'Bocce'],
+                [1,2,'Giant Pong'],[3,4,'BULZiBUCKET'],[5,6,'Molkky'],[7,8,'Cornhole'],[9,10,'Bocce'],
                 [11,12,'Ladder Ball'],[13,14,'QB54'],[19,16,'Soccer Bocce'],[17,20,'Bean Bag Memory Match'],[15,18,'Break']
             ]},
             { time: '11:00am', matches: [
-                [4,5,'Giant Pong'],[6,7,'BULZiBUCKET'],[8,9,'Mölkky'],[10,11,'Cornhole'],[12,13,'Bocce'],
+                [4,5,'Giant Pong'],[6,7,'BULZiBUCKET'],[8,9,'Molkky'],[10,11,'Cornhole'],[12,13,'Bocce'],
                 [14,3,'Ladder Ball'],[16,17,'QB54'],[18,15,'Soccer Bocce'],[1,19,'Bean Bag Memory Match'],[20,2,'Break']
             ]},
             { time: '11:20am', matches: [
-                [6,8,'Giant Pong'],[10,12,'BULZiBUCKET'],[14,16,'Mölkky'],[18,20,'Cornhole'],[2,4,'Bocce'],
+                [6,8,'Giant Pong'],[10,12,'BULZiBUCKET'],[14,16,'Molkky'],[18,20,'Cornhole'],[2,4,'Bocce'],
                 [5,7,'Ladder Ball'],[9,11,'QB54'],[1,17,'Soccer Bocce'],[3,15,'Bean Bag Memory Match'],[13,19,'Break']
             ]},
             { time: '11:40am', matches: [
-                [7,9,'Giant Pong'],[11,13,'BULZiBUCKET'],[15,17,'Mölkky'],[19,1,'Cornhole'],[3,5,'Bocce'],
+                [7,9,'Giant Pong'],[11,13,'BULZiBUCKET'],[15,17,'Molkky'],[19,1,'Cornhole'],[3,5,'Bocce'],
                 [4,6,'Ladder Ball'],[8,10,'QB54'],[20,12,'Soccer Bocce'],[2,18,'Bean Bag Memory Match'],[16,14,'Break']
             ]},
             { time: '12:00pm', matches: [
-                [10,14,'Giant Pong'],[18,2,'BULZiBUCKET'],[7,11,'Mölkky'],[15,3,'Cornhole'],[19,8,'Bocce'],
+                [10,14,'Giant Pong'],[18,2,'BULZiBUCKET'],[7,11,'Molkky'],[15,3,'Cornhole'],[19,8,'Bocce'],
                 [16,20,'Ladder Ball'],[5,12,'QB54'],[4,6,'Soccer Bocce'],[9,13,'Bean Bag Memory Match'],[17,1,'Break']
             ]},
             { time: '12:20pm', matches: [[0,0,'Pizza!']] },
             { time: '12:40pm', matches: [
-                [11,15,'Giant Pong'],[19,9,'BULZiBUCKET'],[3,12,'Mölkky'],[4,16,'Cornhole'],[20,17,'Bocce'],
+                [11,15,'Giant Pong'],[19,9,'BULZiBUCKET'],[3,12,'Molkky'],[4,16,'Cornhole'],[20,17,'Bocce'],
                 [8,13,'Ladder Ball'],[1,18,'QB54'],[10,2,'Soccer Bocce'],[14,7,'Bean Bag Memory Match'],[6,5,'Break']
             ]},
             { time: '1:00pm', matches: [
-                [20,19,'Giant Pong'],[15,16,'BULZiBUCKET'],[4,10,'Mölkky'],[2,17,'Cornhole'],[18,6,'Bocce'],
+                [20,19,'Giant Pong'],[15,16,'BULZiBUCKET'],[4,10,'Molkky'],[2,17,'Cornhole'],[18,6,'Bocce'],
                 [1,9,'Ladder Ball'],[7,3,'QB54'],[14,13,'Soccer Bocce'],[11,5,'Bean Bag Memory Match'],[8,12,'Break']
             ]},
             { time: '1:20pm', matches: [
-                [18,3,'Giant Pong'],[14,20,'BULZiBUCKET'],[2,13,'Mölkky'],[9,12,'Cornhole'],[1,16,'Bocce'],
+                [18,3,'Giant Pong'],[14,20,'BULZiBUCKET'],[2,13,'Molkky'],[9,12,'Cornhole'],[1,16,'Bocce'],
                 [19,17,'Ladder Ball'],[6,15,'QB54'],[7,5,'Soccer Bocce'],[4,8,'Bean Bag Memory Match'],[11,10,'Break']
             ]},
             { time: '1:40pm', matches: [
-                [13,16,'Giant Pong'],[17,5,'BULZiBUCKET'],[1,20,'Mölkky'],[6,14,'Cornhole'],[11,7,'Bocce'],
+                [13,16,'Giant Pong'],[17,5,'BULZiBUCKET'],[1,20,'Molkky'],[6,14,'Cornhole'],[11,7,'Bocce'],
                 [18,15,'Ladder Ball'],[19,2,'QB54'],[9,8,'Soccer Bocce'],[12,10,'Bean Bag Memory Match'],[4,3,'Break']
             ]},
             { time: '2:00pm', matches: [
-                [12,17,'Giant Pong'],[8,1,'BULZiBUCKET'],[19,18,'Mölkky'],[5,13,'Cornhole'],[15,14,'Bocce'],
+                [12,17,'Giant Pong'],[8,1,'BULZiBUCKET'],[19,18,'Molkky'],[5,13,'Cornhole'],[15,14,'Bocce'],
                 [2,10,'Ladder Ball'],[4,20,'QB54'],[11,3,'Soccer Bocce'],[16,6,'Bean Bag Memory Match'],[9,7,'Break']
             ]}
         ];
@@ -133,21 +133,21 @@
         let schedulesEnabled = true;
         
         const EVENT_RULES = {
-            'Mölkky': `<h3>General</h3>
+            'Molkky': `<h3>General</h3>
 <ul>
 <li>One game, winner take all.</li>
-<li>Game consists of twelve skittles (i.e. pins) numbered from 1 to 12 and one Mölkky throwing skittle.</li>
+<li>Game consists of twelve skittles (i.e. pins) numbered from 1 to 12 and one Molkky throwing skittle.</li>
 <li>Game is 2-on-2.</li>
 <li>Object is to get exactly 50 points.</li>
-<li>The Mölkky throwing skittle may be thrown any way, for example underhand, overhand, or sideways. It may also bounce on the grass.</li>
+<li>The Molkky throwing skittle may be thrown any way, for example underhand, overhand, or sideways. It may also bounce on the grass.</li>
 </ul>
 <br>
 
 <h3>Order of Play</h3>
 <ul>
 <li>The game begins with rocks paper scissors shoot (first to win one).</li>
-<li>One of the teammates from the team that wins starts the game by tossing the Mölkky throwing skittle.</li>
-<li>One of the teammates from the other team then tosses the Mölkky throwing skittle.</li>
+<li>One of the teammates from the team that wins starts the game by tossing the Molkky throwing skittle.</li>
+<li>One of the teammates from the other team then tosses the Molkky throwing skittle.</li>
 <li>Teams and teammates continue rotating tosses for the rest of the game.</li>
 </ul>
 <br>
@@ -158,19 +158,19 @@
 </ul>
 
 <div style="text-align: center; margin: 20px 0;">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAACWCAYAAAA8AXHiAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAF8klEQVR4nO3dS3LbMBAFUIry/a9sL1J2sqgkMh8GBvqh31NVcZxYljgzL0MQlPjz5+/XH8D/5a/0DwD/R1gIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSHgL3+6Qp7WGu7sAAAAAElFTkSuQmCC" alt="Mölkky Setup" style="max-width: 200px; height: auto; border: 1px solid #ddd; border-radius: 8px;">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAACWCAYAAAA8AXHiAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAF8klEQVR4nO3dS3LbMBAFUIry/a9sL1J2sqgkMh8GBvqh31NVcZxYljgzL0MQlPjz5+/XH8D/5a/0DwD/R1gIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSFAWAgQFgKEhQBhIUBYCBAWAoSFAGEhQFgIEBYChIUAYSHgL3+6Qp7WGu7sAAAAAElFTkSuQmCC" alt="Molkky Setup" style="max-width: 200px; height: auto; border: 1px solid #ddd; border-radius: 8px;">
 </div>
 
 <ul>
 <li>After a throw, fallen skittles are put upright <u>at the place where they fell</u>. As a result, the skittles are naturally spread out as the game progresses.</li>
-<li>The throwing line is 10 feet from the front of the skittle formation. The Mölkky throwing skittle may be thrown from anywhere behind the throwing line, including from either side.</li>
+<li>The throwing line is 10 feet from the front of the skittle formation. The Molkky throwing skittle may be thrown from anywhere behind the throwing line, including from either side.</li>
 </ul>
 <br>
 
 <h3>Scoring</h3>
 <ul>
 <li>If one skittle falls, the score is equal to the number on the pin. When more than one skittle falls, the score is equal to the number of fallen skittles.</li>
-<li>A skittle is not considered fallen if it is leaning on another skittle or on the Mölkky throwing skittle.</li>
+<li>A skittle is not considered fallen if it is leaning on another skittle or on the Molkky throwing skittle.</li>
 <li>The game ends when the first team reaches exactly 50 points.</li>
 <li>If the team scores over 50, that team's score is lowered to 25.</li>
 <li>If a team misses (has no score) three times in a row, that team's score is lowered to 0.</li>
@@ -538,20 +538,20 @@
 
 <p><em>Please put the balls and pallina next to each other after you complete your game so the next teams can play.</em></p>`
         };
-            'Mölkky': `<h3>General</h3>
+            'Molkky': `<h3>General</h3>
 <ul>
 <li>One game, winner take all.</li>
-<li>Game consists of twelve skittles (i.e. pins) numbered from 1 to 12 and one Mölkky throwing skittle.</li>
+<li>Game consists of twelve skittles (i.e. pins) numbered from 1 to 12 and one Molkky throwing skittle.</li>
 <li>Game is 2-on-2.</li>
 <li>Object is to get exactly 50 points.</li>
-<li>The Mölkky throwing skittle may be thrown any way, for example underhand, overhand, or sideways. It may also bounce on the grass.</li>
+<li>The Molkky throwing skittle may be thrown any way, for example underhand, overhand, or sideways. It may also bounce on the grass.</li>
 </ul>
 
 <h3>Order of Play</h3>
 <ul>
 <li>The game begins with rocks paper scissors shoot (first to win one).</li>
-<li>One of the teammates from the team that wins starts the game by tossing the Mölkky throwing skittle.</li>
-<li>One of the teammates from the other team then tosses the Mölkky throwing skittle.</li>
+<li>One of the teammates from the team that wins starts the game by tossing the Molkky throwing skittle.</li>
+<li>One of the teammates from the other team then tosses the Molkky throwing skittle.</li>
 <li>Teams and teammates continue rotating tosses for the rest of the game.</li>
 </ul>
 
@@ -559,13 +559,13 @@
 <ul>
 <li>At the beginning of the game, the skittles are placed in a specific formation.</li>
 <li>After a throw, fallen skittles are put upright at the place where they fell. As a result, the skittles are naturally spread out as the game progresses.</li>
-<li>The throwing line is 10 feet from the front of the skittle formation. The Mölkky throwing skittle may be thrown from anywhere behind the throwing line, including from either side.</li>
+<li>The throwing line is 10 feet from the front of the skittle formation. The Molkky throwing skittle may be thrown from anywhere behind the throwing line, including from either side.</li>
 </ul>
 
 <h3>Scoring</h3>
 <ul>
 <li>If one skittle falls, the score is equal to the number on the pin. When more than one skittle falls, the score is equal to the number of fallen skittles.</li>
-<li>A skittle is not considered fallen if it is leaning on another skittle or on the Mölkky throwing skittle.</li>
+<li>A skittle is not considered fallen if it is leaning on another skittle or on the Molkky throwing skittle.</li>
 <li>The game ends when the first team reaches exactly 50 points.</li>
 <li>If the team scores over 50, that team's score is lowered to 25.</li>
 <li>If a team misses (has no score) three times in a row, that team's score is lowered to 0.</li>
@@ -896,7 +896,7 @@
 
 <h3>Events</h3>
 <ul>
-<li>Mölkky</li>
+<li>Molkky</li>
 <li>Bocce</li>
 <li>Giant Pong</li>
 <li>Cornhole</li>
@@ -1337,7 +1337,7 @@
                     <div class="card">
                         <h2 class="card-title">Silvalympics Overview</h2>
                         <div class="scrollable" style="text-align: left;">
-                            ${OVERVIEW_TEXT.replace(/<li>(Mölkky|Bocce|Giant Pong|Cornhole|BULZiBUCKET|Ladder Ball|QB54|Soccer Bocce|Bean Bag Memory Match)<\/li>/g, 
+                            ${OVERVIEW_TEXT.replace(/<li>(Molkky|Bocce|Giant Pong|Cornhole|BULZiBUCKET|Ladder Ball|QB54|Soccer Bocce|Bean Bag Memory Match)<\/li>/g, 
                                 '<li><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules(\'$1\')">$1</span></li>')}
                         </div>
                     </div>
