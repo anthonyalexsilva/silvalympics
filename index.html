@@ -541,81 +541,81 @@
 <p><em>Please put the balls and pallina next to each other after you complete your game so the next teams can play.</em></p>`
         };
         
-        const OVERVIEW_TEXT = `<h2 style="text-decoration: underline; font-style: italic;">Overview</h2>
+        const OVERVIEW_TEXT = `
+<h2 style="text-decoration: underline; font-style: italic; margin-bottom: 20px;">Overview</h2>
 
-<h3><strong>General</strong></h3>
-<ul>
-<li>Teams of two players compete in 9 events against random different teams for each event.
-  <ul>
-    <li>Teams may compete against each other twice in different events</li>
-  </ul>
-</li>
-<li>Each event lasts strictly 20 minutes.</li>
-<li>After completing your event, please reset it for the next teams that play.</li>
+<h3 style="font-weight: bold; margin-bottom: 10px;">General</h3>
+<ul style="list-style-type: disc; margin-left: 20px; margin-bottom: 15px;">
+  <li style="margin-bottom: 10px;">Teams of two players compete in 9 events against random different teams for each event.
+    <ul style="list-style-type: disc; margin-left: 20px; margin-top: 10px;">
+      <li>Teams may compete against each other twice in different events</li>
+    </ul>
+  </li>
+  <li style="margin-bottom: 10px;">Each event lasts strictly 20 minutes.</li>
+  <li style="margin-bottom: 10px;">After completing your event, please reset it for the next teams that play.</li>
 </ul>
 
-<h3></h3>
+<div style="margin-bottom: 15px;"></div>
 
-<h3><strong>Events</strong></h3>
-<ul>
-<li></li>
-<li><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Mölkky')">Mölkky</span></li>
-<li><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Bocce')">Bocce</span></li>
-<li><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Giant Pong')">Giant Pong</span></li>
-<li><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Cornhole')">Cornhole</span></li>
-<li><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('BULZiBUCKET')">BULZiBUCKET</span></li>
-<li><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Ladder Ball')">Ladder Ball</span></li>
-<li><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('QB54')">QB54</span></li>
-<li><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Soccer Bocce')">Soccer Bocce</span></li>
-<li><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Bean Bag Memory Match')">Bean Bag Memory Match</span></li>
+<h3 style="font-weight: bold; margin-bottom: 10px;">Events</h3>
+<ul style="list-style-type: disc; margin-left: 20px; margin-bottom: 15px;">
+  <li style="margin-bottom: 5px;"><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Mölkky')">Mölkky</span></li>
+  <li style="margin-bottom: 5px;"><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Bocce')">Bocce</span></li>
+  <li style="margin-bottom: 5px;"><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Giant Pong')">Giant Pong</span></li>
+  <li style="margin-bottom: 5px;"><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Cornhole')">Cornhole</span></li>
+  <li style="margin-bottom: 5px;"><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('BULZiBUCKET')">BULZiBUCKET</span></li>
+  <li style="margin-bottom: 5px;"><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Ladder Ball')">Ladder Ball</span></li>
+  <li style="margin-bottom: 5px;"><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('QB54')">QB54</span></li>
+  <li style="margin-bottom: 5px;"><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Soccer Bocce')">Soccer Bocce</span></li>
+  <li style="margin-bottom: 5px;"><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Bean Bag Memory Match')">Bean Bag Memory Match</span></li>
 </ul>
 
-<h3><strong>Playoffs</strong></h3>
-<ul>
-<li>The top 10 teams advance to the playoffs.
-  <ul>
-    <li>Tiebreakers are solved with the "point wagering" system designed at the outset.</li>
-    <li>Higher Seed goes first to start off each game.</li>
-  </ul>
-</li>
-<li>Wild Card Round
-  <ul>
-    <li>The top 6 seeds get a bye and do not participate in the Wild Card Round.</li>
-    <li>7<sup>th</sup> seed plays 10<sup>th</sup> seed and 8<sup>th</sup> seed plays 9<sup>th</sup> seed.</li>
-    <li>Each team plays Giant Pong with only 3 buckets (vs the usual 10) in a fast-paced single elimination playoff. There is no overtime.</li>
-    <li>Both games are played simultaneously.</li>
-  </ul>
-</li>
-<li>Remaining Playoff Rounds
-  <ul>
-    <li>1 vs. 8, 2 vs. 7, 3 vs. 6, 4 vs. 5 in the next round.</li>
-    <li>All rules remain the same for each game except for the Wild Card Round.</li>
-    <li>In subsequent rounds, the highest remaining seed will play the lowest remaining seed, etc.</li>
-  </ul>
-</li>
-<li>Choice of Games
-  <ul>
-    <li>For each game in the playoffs, the highest seed team will pick a game out of a hat.</li>
-    <li>Once the game is picked, the higher seed has the choice to play that game or redraw among the remaining events. Only one redraw (veto) is allowed.</li>
-    <li>Once two teams are given a game to play, the next highest seed picks one of the remaining games out of a hat.</li>
-  </ul>
-</li>
-<li>The Finals will be a combination of 3 events, "best of" style.
-  <ul>
-    <li>Top seed picks first and third events (game of team's choice, <em>not out of the hat</em>). Second team picks second event. All events are picked before the first event is played.</li>
-    <li>Each team can veto TWO selections by the other team (e.g. a team may say the other team cannot choose Giant Pong or Cornhole). Vetos by each team are declared <em>before</em> the teams announce their selections.</li>
-  </ul>
-</li>
-<li>In the event of a TIE for playoff seeding (same record and same point total based on their wagers):
-  <ul>
-    <li>1<sup>st</sup> tiebreaker: head-to-head record -- if one has beaten the other, that team is the higher seed.</li>
-    <li>If teams did not play each other, then rocks paper scissors shoot will decide order (first to win 1).
-      <ul>
-        <li>If two teams meet in the playoffs with same point total and seeding determined by rocks paper scissors, the game will be pulled from the hat with no option to veto.</li>
-      </ul>
-    </li>
-  </ul>
-</li>
+<h3 style="font-weight: bold; margin-bottom: 10px;">Playoffs</h3>
+<ul style="list-style-type: disc; margin-left: 20px; margin-bottom: 15px;">
+  <li style="margin-bottom: 10px;">The top 10 teams advance to the playoffs.
+    <ul style="list-style-type: disc; margin-left: 20px; margin-top: 10px;">
+      <li style="margin-bottom: 10px;">Tiebreakers are solved with the "point wagering" system designed at the outset.</li>
+      <li style="margin-bottom: 10px;">Higher Seed goes first to start off each game.</li>
+    </ul>
+  </li>
+  <li style="margin-bottom: 10px;">Wild Card Round
+    <ul style="list-style-type: disc; margin-left: 20px; margin-top: 10px;">
+      <li style="margin-bottom: 10px;">The top 6 seeds get a bye and do not participate in the Wild Card Round.</li>
+      <li style="margin-bottom: 10px;">7<sup>th</sup> seed plays 10<sup>th</sup> seed and 8<sup>th</sup> seed plays 9<sup>th</sup> seed.</li>
+      <li style="margin-bottom: 10px;">Each team plays Giant Pong with only 3 buckets (vs the usual 10) in a fast-paced single elimination playoff. There is no overtime.</li>
+      <li style="margin-bottom: 10px;">Both games are played simultaneously.</li>
+    </ul>
+  </li>
+  <li style="margin-bottom: 10px;">Remaining Playoff Rounds
+    <ul style="list-style-type: disc; margin-left: 20px; margin-top: 10px;">
+      <li style="margin-bottom: 10px;">1 vs. 8, 2 vs. 7, 3 vs. 6, 4 vs. 5 in the next round.</li>
+      <li style="margin-bottom: 10px;">All rules remain the same for each game except for the Wild Card Round.</li>
+      <li style="margin-bottom: 10px;">In subsequent rounds, the highest remaining seed will play the lowest remaining seed, etc.</li>
+    </ul>
+  </li>
+  <li style="margin-bottom: 10px;">Choice of Games
+    <ul style="list-style-type: disc; margin-left: 20px; margin-top: 10px;">
+      <li style="margin-bottom: 10px;">For each game in the playoffs, the highest seed team will pick a game out of a hat.</li>
+      <li style="margin-bottom: 10px;">Once the game is picked, the higher seed has the choice to play that game or redraw among the remaining events. Only one redraw (veto) is allowed.</li>
+      <li style="margin-bottom: 10px;">Once two teams are given a game to play, the next highest seed picks one of the remaining games out of a hat.</li>
+    </ul>
+  </li>
+  <li style="margin-bottom: 10px;">The Finals will be a combination of 3 events, "best of" style.
+    <ul style="list-style-type: disc; margin-left: 20px; margin-top: 10px;">
+      <li style="margin-bottom: 10px;">Top seed picks first and third events (game of team's choice, <em>not out of the hat</em>). Second team picks second event. All events are picked before the first event is played.</li>
+      <li style="margin-bottom: 10px;">Each team can veto TWO selections by the other team (e.g. a team may say the other team cannot choose Giant Pong or Cornhole). Vetos by each team are declared <em>before</em> the teams announce their selections.</li>
+    </ul>
+  </li>
+  <li style="margin-bottom: 10px;">In the event of a TIE for playoff seeding (same record and same point total based on their wagers):
+    <ul style="list-style-type: disc; margin-left: 20px; margin-top: 10px;">
+      <li style="margin-bottom: 10px;">1<sup>st</sup> tiebreaker: head-to-head record -- if one has beaten the other, that team is the higher seed.</li>
+      <li style="margin-bottom: 10px;">If teams did not play each other, then rocks paper scissors shoot will decide order (first to win 1).
+        <ul style="list-style-type: disc; margin-left: 20px; margin-top: 10px;">
+          <li style="margin-bottom: 10px;">If two teams meet in the playoffs with same point total and seeding determined by rocks paper scissors, the game will be pulled from the hat with no option to veto.</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
 </ul>`;
 
         async function loadData() {
