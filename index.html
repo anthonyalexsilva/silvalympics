@@ -6,7 +6,7 @@
     <title>10th Annual Silvalympics</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); min-height: 100vh; padding-bottom: 80px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); min-height: 100vh; padding-bottom: 80px; }
         .container { max-width: 800px; margin: 0 auto; padding: 20px; }
         .title { color: white; text-align: center; font-size: 32px; font-weight: bold; margin-bottom: 30px; }
         .team-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
@@ -541,8 +541,8 @@
 <p><em>Please put the balls and pallina next to each other after you complete your game so the next teams can play.</em></p>`
         };
         
-        const OVERVIEW_TEXT = `<h2 style="text-decoration: underline;">Overview</h2>
-<br>
+        const OVERVIEW_TEXT = `<h2 style="text-decoration: underline; font-style: italic;">Overview</h2>
+
 <h3><strong>General</strong></h3>
 <ul>
 <li>Teams of two players compete in 9 events against random different teams for each event.
@@ -553,10 +553,12 @@
 <li>Each event lasts strictly 20 minutes.</li>
 <li>After completing your event, please reset it for the next teams that play.</li>
 </ul>
-<br>
+
+<h3></h3>
 
 <h3><strong>Events</strong></h3>
 <ul>
+<li></li>
 <li><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Mölkky')">Mölkky</span></li>
 <li><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Bocce')">Bocce</span></li>
 <li><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Giant Pong')">Giant Pong</span></li>
@@ -567,7 +569,6 @@
 <li><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Soccer Bocce')">Soccer Bocce</span></li>
 <li><span style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('Bean Bag Memory Match')">Bean Bag Memory Match</span></li>
 </ul>
-<br>
 
 <h3><strong>Playoffs</strong></h3>
 <ul>
@@ -580,7 +581,7 @@
 <li>Wild Card Round
   <ul>
     <li>The top 6 seeds get a bye and do not participate in the Wild Card Round.</li>
-    <li>7th seed plays 10th seed and 8th seed plays 9th seed.</li>
+    <li>7<sup>th</sup> seed plays 10<sup>th</sup> seed and 8<sup>th</sup> seed plays 9<sup>th</sup> seed.</li>
     <li>Each team plays Giant Pong with only 3 buckets (vs the usual 10) in a fast-paced single elimination playoff. There is no overtime.</li>
     <li>Both games are played simultaneously.</li>
   </ul>
@@ -601,13 +602,13 @@
 </li>
 <li>The Finals will be a combination of 3 events, "best of" style.
   <ul>
-    <li>Top seed picks first and third events (game of team's choice, not out of the hat). Second team picks second event. All events are picked before the first event is played.</li>
-    <li>Each team can veto TWO selections by the other team (e.g. a team may say the other team cannot choose Giant Pong or Cornhole). Vetos by each team are declared before the teams announce their selections.</li>
+    <li>Top seed picks first and third events (game of team's choice, <em>not out of the hat</em>). Second team picks second event. All events are picked before the first event is played.</li>
+    <li>Each team can veto TWO selections by the other team (e.g. a team may say the other team cannot choose Giant Pong or Cornhole). Vetos by each team are declared <em>before</em> the teams announce their selections.</li>
   </ul>
 </li>
 <li>In the event of a TIE for playoff seeding (same record and same point total based on their wagers):
   <ul>
-    <li>1st tiebreaker: head-to-head record – if one has beaten the other, that team is the higher seed.</li>
+    <li>1<sup>st</sup> tiebreaker: head-to-head record -- if one has beaten the other, that team is the higher seed.</li>
     <li>If teams did not play each other, then rocks paper scissors shoot will decide order (first to win 1).
       <ul>
         <li>If two teams meet in the playoffs with same point total and seeding determined by rocks paper scissors, the game will be pulled from the hat with no option to veto.</li>
@@ -1022,16 +1023,34 @@
                     <div class="card">
                         <h2 class="card-title">Admin Controls</h2>
                         <p style="text-align: center; color: #666; margin-bottom: 30px;">Administrative functions for managing the Silvalympics</p>
+                        <button class="menu-btn orange" onclick="state.view='toggle-schedules-menu'; render()">🔄 Toggle Schedules</button>
+                        <button class="menu-btn blue" onclick="state.view='toggle-wagers-menu'; render()">🎯 Toggle Wagers</button>
+                        <button class="menu-btn red" onclick="clearAllData()">🗑️ Clear All Data</button>
+                    </div>
+                `;
+            } else if (state.view === 'toggle-schedules-menu') {
+                app.innerHTML = `
+                    <button class="back-btn" onclick="state.view='admin'; render()">← Back to Admin Controls</button>
+                    <div class="card">
+                        <h2 class="card-title">Toggle Schedules</h2>
+                        <p style="text-align: center; color: #666; margin-bottom: 30px;">Choose how to toggle schedule access</p>
                         <button class="menu-btn orange" onclick="toggleAllSchedules()">🔄 Toggle Schedules (All Teams)</button>
                         <button class="menu-btn purple" onclick="state.view='toggle-individual'; render()">🔄 Toggle Schedules (Individual Team)</button>
+                    </div>
+                `;
+            } else if (state.view === 'toggle-wagers-menu') {
+                app.innerHTML = `
+                    <button class="back-btn" onclick="state.view='admin'; render()">← Back to Admin Controls</button>
+                    <div class="card">
+                        <h2 class="card-title">Toggle Wagers</h2>
+                        <p style="text-align: center; color: #666; margin-bottom: 30px;">Choose how to toggle wager editing</p>
                         <button class="menu-btn blue" onclick="toggleAllWagers()">🎯 Toggle Wagers (All Teams)</button>
                         <button class="menu-btn green" onclick="state.view='toggle-wagers-individual'; render()">🎯 Toggle Wagers (Individual Team)</button>
-                        <button class="menu-btn red" onclick="clearAllData()">🗑️ Clear All Data</button>
                     </div>
                 `;
             } else if (state.view === 'toggle-individual') {
                 app.innerHTML = `
-                    <button class="back-btn" onclick="state.view='admin'; render()">← Back to Admin Controls</button>
+                    <button class="back-btn" onclick="state.view='toggle-schedules-menu'; render()">← Back to Toggle Schedules</button>
                     <div class="card">
                         <h2 class="card-title">Toggle Schedule - Select Team</h2>
                         <p style="text-align: center; color: #666; margin-bottom: 20px;">Select a team to toggle their schedule access</p>
@@ -1054,7 +1073,7 @@
                 `;
             } else if (state.view === 'toggle-wagers-individual') {
                 app.innerHTML = `
-                    <button class="back-btn" onclick="state.view='admin'; render()">← Back to Admin Controls</button>
+                    <button class="back-btn" onclick="state.view='toggle-wagers-menu'; render()">← Back to Toggle Wagers</button>
                     <div class="card">
                         <h2 class="card-title">Toggle Wagers - Select Team</h2>
                         <p style="text-align: center; color: #666; margin-bottom: 20px;">Select a team to toggle their wager editing ability</p>
