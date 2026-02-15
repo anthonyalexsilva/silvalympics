@@ -123,9 +123,6 @@
             ]}
         ];
 
-        // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbz6vM4Rs_BvIp3XwxzpodTMCDfM1JWQPWYK3iGM3ECX1e8IofEJxyEzgHn_RUuhNU53yw/exec';
-        
         let state = { view: 'team-select', selectedTeam: null, wagersSaved: false, connectionStatus: 'loading' };
         let data = { teamNames: {}, wagers: {}, results: {}, disabledSchedules: {}, disabledWagers: {} };
         let lastUserAction = Date.now();
@@ -627,89 +624,43 @@
 </div>`;
 
         async function loadData() {
-            if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
-                state.connectionStatus = 'error';
-                render();
-                return;
-            }
-            
-            // Don't load if we saved recently - prevents overwriting unsaved local changes
-            const timeSinceLastSave = Date.now() - lastSaveTime;
-            if (timeSinceLastSave < 15000) {
-                console.log(`Skipping load - saved ${Math.round(timeSinceLastSave/1000)}s ago`);
-                return;
-            }
-
-            // Don't load while a save is in progress
-            if (isSaving) {
-                console.log('Skipping load - save in progress');
-                return;
-            }
-            
             try {
                 state.connectionStatus = 'loading';
-                const response = await fetch(BACKEND_URL);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                
-                const serverData = await response.json();
-                
-                if (serverData.teamNames) {
-                    try { data.teamNames = JSON.parse(serverData.teamNames); } catch(e) { data.teamNames = {}; }
-                }
-                if (serverData.wagers) {
-                    try { data.wagers = JSON.parse(serverData.wagers); } catch(e) { data.wagers = {}; }
-                }
-                if (serverData.results) {
-                    try { data.results = JSON.parse(serverData.results); } catch(e) { data.results = {}; }
-                }
-                
+                const [tn, wg, rs, ds, dw] = await Promise.all([
+                    window.storage.get('silvalympics:teamNames').catch(() => null),
+                    window.storage.get('silvalympics:wagers').catch(() => null),
+                    window.storage.get('silvalympics:results').catch(() => null),
+                    window.storage.get('silvalympics:disabledSchedules').catch(() => null),
+                    window.storage.get('silvalympics:disabledWagers').catch(() => null)
+                ]);
+                if (tn) try { data.teamNames = JSON.parse(tn.value); } catch(e) {}
+                if (wg) try { data.wagers = JSON.parse(wg.value); } catch(e) {}
+                if (rs) try { data.results = JSON.parse(rs.value); } catch(e) {}
+                if (ds) try { data.disabledSchedules = JSON.parse(ds.value); } catch(e) {}
+                if (dw) try { data.disabledWagers = JSON.parse(dw.value); } catch(e) {}
                 state.connectionStatus = 'connected';
                 render();
-            } catch (e) {
+            } catch(e) {
                 console.error('Error loading data:', e);
                 state.connectionStatus = 'error';
+                render();
             }
         }
 
         async function saveData() {
-            if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') return;
-            if (isSaving) return; // Prevent concurrent saves
-            
+            if (isSaving) return;
             isSaving = true;
-            state.connectionStatus = 'loading';
-            
             try {
-                const payload = {
-                    teamNames: JSON.stringify(data.teamNames),
-                    wagers: JSON.stringify(data.wagers),
-                    results: JSON.stringify(data.results)
-                };
-                
-                // Try GET first (works with Google Apps Script without CORS issues)
-                // Fall back to POST if URL would be too long
-                const params = new URLSearchParams({ action: 'save', data: JSON.stringify(payload) });
-                const getUrl = `${BACKEND_URL}?${params.toString()}`;
-                
-                let response;
-                if (getUrl.length < 2000) {
-                    // Use GET for smaller payloads (most reliable with Google Apps Script)
-                    response = await fetch(getUrl);
-                } else {
-                    // Use POST for larger payloads (teams 15-20 with full data)
-                    response = await fetch(BACKEND_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: params.toString()
-                    });
-                }
-                
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const result = await response.json();
-                if (result.error) throw new Error(result.error);
-                
+                await Promise.all([
+                    window.storage.set('silvalympics:teamNames', JSON.stringify(data.teamNames)),
+                    window.storage.set('silvalympics:wagers', JSON.stringify(data.wagers)),
+                    window.storage.set('silvalympics:results', JSON.stringify(data.results)),
+                    window.storage.set('silvalympics:disabledSchedules', JSON.stringify(data.disabledSchedules || {})),
+                    window.storage.set('silvalympics:disabledWagers', JSON.stringify(data.disabledWagers || {}))
+                ]);
                 state.connectionStatus = 'connected';
                 console.log('Data saved successfully');
-            } catch (e) {
+            } catch(e) {
                 console.error('Error saving data:', e);
                 state.connectionStatus = 'error';
             } finally {
@@ -1203,7 +1154,8 @@
                     data.teamNames = {};
                     data.wagers = {};
                     data.results = {};
-                    lastSaveTime = Date.now();
+                    data.disabledSchedules = {};
+                    data.disabledWagers = {};
                     await saveData();
                     alert('All data cleared!');
                     state.view = 'team-select';
@@ -1303,18 +1255,8 @@
         }
 
         (async () => {
-            // Render immediately so user sees the interface right away
-            render();
-            
-            // Load data in background
+            // Load persisted data first, then render
             await loadData();
-            
-            // Set up auto-refresh interval (every 20s - gives saves enough time to complete before re-loading)
-            setInterval(async () => {
-                if (state.view === 'team-select' || state.view === 'menu' || state.view === 'schedule' || state.view === 'results' || state.view === 'standings') {
-                    await loadData();
-                }
-            }, 20000);
         })();
     </script>
 </body>
