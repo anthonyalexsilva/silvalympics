@@ -124,7 +124,7 @@
         ];
 
         // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbz6vM4Rs_BvIp3XwxzpodTMCDfM1JWQPWYK3iGM3ECX1e8IofEJxyEzgHn_RUuhNU53yw/exec';
+        const BACKEND_URL = 'YOUR_SCRIPT_URL_HERE';
         
         let state = { view: 'team-select', selectedTeam: null, wagersSaved: false, connectionStatus: 'loading' };
         let data = { teamNames: {}, wagers: {}, results: {}, disabledSchedules: {}, disabledWagers: {} };
@@ -629,62 +629,38 @@
         async function loadData() {
             if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
                 state.connectionStatus = 'error';
-                console.error('Please set your Google Apps Script URL!');
-                render(); // Still render the UI even without backend
+                render();
                 return;
             }
             
-            // Don't load if we saved in the last 5 seconds - prevents overwriting local changes
+            // Don't load if we saved recently - prevents overwriting unsaved local changes
             const timeSinceLastSave = Date.now() - lastSaveTime;
-            if (timeSinceLastSave < 5000) {
+            if (timeSinceLastSave < 15000) {
                 console.log(`Skipping load - saved ${Math.round(timeSinceLastSave/1000)}s ago`);
+                return;
+            }
+
+            // Don't load while a save is in progress
+            if (isSaving) {
+                console.log('Skipping load - save in progress');
                 return;
             }
             
             try {
                 state.connectionStatus = 'loading';
-                
                 const response = await fetch(BACKEND_URL);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
                 const serverData = await response.json();
-                console.log('Raw server response:', serverData);
-                console.log('teamNames from server:', serverData.teamNames);
-                console.log('wagers from server:', serverData.wagers);
-                console.log('results from server:', serverData.results);
                 
                 if (serverData.teamNames) {
-                    try {
-                        const parsed = JSON.parse(serverData.teamNames);
-                        console.log('Parsed teamNames:', parsed);
-                        data.teamNames = parsed;
-                    } catch (e) {
-                        console.error('Error parsing teamNames:', e);
-                        data.teamNames = {};
-                    }
+                    try { data.teamNames = JSON.parse(serverData.teamNames); } catch(e) { data.teamNames = {}; }
                 }
                 if (serverData.wagers) {
-                    try {
-                        const parsed = JSON.parse(serverData.wagers);
-                        console.log('Parsed wagers:', parsed);
-                        data.wagers = parsed;
-                    } catch (e) {
-                        console.error('Error parsing wagers:', e);
-                        data.wagers = {};
-                    }
+                    try { data.wagers = JSON.parse(serverData.wagers); } catch(e) { data.wagers = {}; }
                 }
                 if (serverData.results) {
-                    try {
-                        const parsed = JSON.parse(serverData.results);
-                        console.log('Parsed results:', parsed);
-                        data.results = parsed;
-                    } catch (e) {
-                        console.error('Error parsing results:', e);
-                        data.results = {};
-                    }
+                    try { data.results = JSON.parse(serverData.results); } catch(e) { data.results = {}; }
                 }
                 
                 state.connectionStatus = 'connected';
@@ -696,48 +672,43 @@
         }
 
         async function saveData() {
-            if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
-                console.error('Please set your Google Apps Script URL!');
-                return;
-            }
+            if (BACKEND_URL === 'https://script.google.com/macros/s/AKfycbz6vM4Rs_BvIp3XwxzpodTMCDfM1JWQPWYK3iGM3ECX1e8IofEJxyEzgHn_RUuhNU53yw/exec') return;
+            if (isSaving) return; // Prevent concurrent saves
             
-            console.log('saveData starting');
+            isSaving = true;
+            state.connectionStatus = 'loading';
             
             try {
-                state.connectionStatus = 'loading';
-                
                 const payload = {
                     teamNames: JSON.stringify(data.teamNames),
                     wagers: JSON.stringify(data.wagers),
                     results: JSON.stringify(data.results)
                 };
                 
-                console.log('Saving to server:', payload);
+                // Try GET first (works with Google Apps Script without CORS issues)
+                // Fall back to POST if URL would be too long
+                const params = new URLSearchParams({ action: 'save', data: JSON.stringify(payload) });
+                const getUrl = `${BACKEND_URL}?${params.toString()}`;
                 
-                // Use URL parameters instead of POST body to avoid CORS issues
-                const params = new URLSearchParams({
-                    action: 'save',
-                    data: JSON.stringify(payload)
-                });
-                
-                const response = await fetch(`${BACKEND_URL}?${params.toString()}`);
-                
-                console.log('Save response status:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                let response;
+                if (getUrl.length < 2000) {
+                    // Use GET for smaller payloads (most reliable with Google Apps Script)
+                    response = await fetch(getUrl);
+                } else {
+                    // Use POST for larger payloads (teams 15-20 with full data)
+                    response = await fetch(BACKEND_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: params.toString()
+                    });
                 }
                 
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const result = await response.json();
-                console.log('Save response:', result);
+                if (result.error) throw new Error(result.error);
                 
-                if (result.error) {
-                    throw new Error(result.error);
-                }
-                
-                console.log('Saved data successfully');
                 state.connectionStatus = 'connected';
-                
+                console.log('Data saved successfully');
             } catch (e) {
                 console.error('Error saving data:', e);
                 state.connectionStatus = 'error';
@@ -759,20 +730,29 @@
         }
 
         function saveResult(time, t1, t2, event, winner) {
-            console.log('Button clicked - starting saveResult');
             const key = getResultKey(time, t1, t2, event);
-            // If clicking the same result again, undo it
             if (data.results[key] === winner) {
                 delete data.results[key];
             } else {
                 data.results[key] = winner;
             }
-            
-            // Record save time to block auto-refresh
             lastSaveTime = Date.now();
-            
-            render(); // Update UI immediately
-            saveData(); // Save in background (no await)
+
+            // Update buttons in-place without full re-render (Fix #1: prevents scroll jumping to top)
+            const winBtn = document.querySelector(`[data-result-key="${key}-win"]`);
+            const loseBtn = document.querySelector(`[data-result-key="${key}-lose"]`);
+            if (winBtn && loseBtn) {
+                const result = data.results[key];
+                // Win button is active when result equals t1 (the selected team who clicked Win)
+                const winActive = result !== undefined && result === t1;
+                // Lose button is active when result equals t2 (the opponent)
+                const loseActive = result !== undefined && result === t2;
+                winBtn.className = 'win-btn' + (winActive ? ' active' : '');
+                loseBtn.className = 'lose-btn' + (loseActive ? ' active' : '');
+            } else {
+                render();
+            }
+            saveData();
         }
 
         function getTeamSchedule(teamNum) {
@@ -825,8 +805,9 @@
         function render() {
             console.time('render');
             
-            // Save scroll position before rendering
+            // Save scroll position before rendering (only restore for views where it matters)
             const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
+            const preserveScroll = (state.view === 'results' || state.view === 'wagers' || state.view === 'standings');
             
             const app = document.getElementById('app');
             if (state.view === 'team-select') {
@@ -863,17 +844,22 @@
                     </div>
                 `;
             } else if (state.view === 'team-names') {
+                // Pre-populate with existing names (Update #6)
+                const existingNames = data.teamNames[state.selectedTeam] || '';
+                const parts = existingNames.split(' & ');
+                const existingName1 = parts[0] || '';
+                const existingName2 = parts[1] || '';
                 app.innerHTML = `
                     <button class="back-btn" onclick="state.view='menu'; render()">← Back to Menu</button>
                     <div class="card">
                         <h2 class="card-title">Team ${state.selectedTeam} Names</h2>
                         <div class="input-group">
                             <label>Player 1</label>
-                            <input type="text" id="name1" placeholder="Enter name">
+                            <input type="text" id="name1" placeholder="Enter name" value="${existingName1}">
                         </div>
                         <div class="input-group">
                             <label>Player 2</label>
-                            <input type="text" id="name2" placeholder="Enter name">
+                            <input type="text" id="name2" placeholder="Enter name" value="${existingName2}">
                         </div>
                         <button class="menu-btn purple" onclick="saveTeamNames()">Save Names</button>
                     </div>
@@ -908,12 +894,15 @@
                                 <div class="wager-row">
                                     <label style="color: #8b5cf6; cursor: pointer; text-decoration: underline;" onclick="showRules('${event}')">${event}</label>
                                     <input type="number" min="1" max="20" value="${teamWagers[event] || ''}" 
-                                        ${disabledAttr} onchange="updateWager('${event}', this.value)">
+                                        ${disabledAttr} 
+                                        onchange="updateWager('${event}', this.value)"
+                                        onfocus="this.dataset.focused='true'"
+                                        onblur="this.dataset.focused='false'">
                                 </div>
                             `).join('')}
                         </div>
                         ${canEditWagers ? `<button class="menu-btn purple ${state.wagersSaved ? 'saved' : ''}" 
-                            onclick="saveWagers()">${state.wagersSaved ? '✓ Wagers Saved!' : 'Save Wagers'}</button>` : ''}
+                            onmousedown="saveWagersOnMousedown(event)">${state.wagersSaved ? '✓ Wagers Saved!' : 'Save Wagers'}</button>` : ''}
                     </div>
                 `;
             } else if (state.view === 'schedule') {
@@ -948,14 +937,17 @@
                                 const result = getResult(item.time, item.team1, item.team2, item.event);
                                 const didWin = result === state.selectedTeam;
                                 const didLose = result !== undefined && result !== state.selectedTeam;
+                                const key = getResultKey(item.time, item.team1, item.team2, item.event);
                                 return `
                                     <div class="schedule-item">
                                         <div class="schedule-time">${item.time} - ${item.event}</div>
                                         <div class="schedule-vs">vs ${getTeamName(item.opponent)}</div>
                                         <div class="result-btns">
                                             <button class="win-btn ${didWin ? 'active' : ''}" 
+                                                data-result-key="${key}-win"
                                                 onclick="saveResult('${item.time}', ${item.team1}, ${item.team2}, '${item.event}', ${state.selectedTeam})">Win</button>
                                             <button class="lose-btn ${didLose ? 'active' : ''}" 
+                                                data-result-key="${key}-lose"
                                                 onclick="saveResult('${item.time}', ${item.team1}, ${item.team2}, '${item.event}', ${item.opponent})">Lose</button>
                                         </div>
                                     </div>
@@ -1105,8 +1097,12 @@
             }
             console.timeEnd('render');
             
-            // Restore scroll position after rendering
-            window.scrollTo(0, scrollPos);
+            // Restore scroll position after rendering (only for views where position should be preserved)
+            if (preserveScroll) {
+                window.scrollTo(0, scrollPos);
+            } else {
+                window.scrollTo(0, 0);
+            }
         }
 
         function selectTeam(num) {
@@ -1136,28 +1132,66 @@
 
         function updateWager(event, value) {
             const val = parseInt(value) || 0;
+            if (!data.wagers[state.selectedTeam]) data.wagers[state.selectedTeam] = {};
             if (val >= 1 && val <= 20) {
-                if (!data.wagers[state.selectedTeam]) data.wagers[state.selectedTeam] = {};
                 data.wagers[state.selectedTeam][event] = val;
-                render();
+            } else if (val === 0 || value === '') {
+                delete data.wagers[state.selectedTeam][event];
             }
+            // Update total display without full re-render (avoids focus loss / double-click issue)
+            const teamWagers = data.wagers[state.selectedTeam] || {};
+            const total = Object.values(teamWagers).reduce((sum, v) => sum + (parseInt(v) || 0), 0);
+            const totalEl = document.querySelector('.total');
+            if (totalEl) {
+                totalEl.textContent = `Total: ${total} / 50`;
+                totalEl.className = `total ${total === 50 ? 'valid' : 'invalid'}`;
+            }
+        }
+
+        function saveWagersOnMousedown(e) {
+            // Prevent default so the button click fires before blur steals focus
+            e.preventDefault();
+            // Flush any active input first
+            const activeEl = document.activeElement;
+            if (activeEl && activeEl.tagName === 'INPUT') {
+                updateWager(activeEl.closest('.wager-row')?.querySelector('label')?.textContent?.trim() || '', activeEl.value);
+            }
+            saveWagers();
         }
 
         function saveWagers() {
             const teamWagers = data.wagers[state.selectedTeam] || {};
-            const total = Object.values(teamWagers).reduce((sum, val) => sum + val, 0);
+            const events = Object.keys(teamWagers);
+
+            // Update #5: validate each wager
+            for (const event of EVENTS) {
+                const val = teamWagers[event];
+                if (val === undefined || val === '' || val === null) {
+                    alert(`Please enter a wager for ${event}.`);
+                    return;
+                }
+                const num = parseInt(val);
+                if (isNaN(num) || num <= 0 || num > 20) {
+                    alert(`Wager for ${event} must be between 1 and 20.`);
+                    return;
+                }
+            }
+
+            const total = Object.values(teamWagers).reduce((sum, val) => sum + (parseInt(val) || 0), 0);
             if (total !== 50) {
-                alert('Wagers must total 50!');
+                alert(`Wagers must total exactly 50. Current total: ${total}`);
                 return;
             }
-            lastSaveTime = Date.now(); // Block auto-refresh
+
+            lastSaveTime = Date.now();
             state.wagersSaved = true;
-            render(); // Update UI immediately
-            saveData(); // Save in background (no await)
+            saveData(); // Save in background
+            // Update #3: go back to team menu after saving
             setTimeout(() => {
                 state.wagersSaved = false;
+                state.view = 'menu';
                 render();
-            }, 2000);
+            }, 800);
         }
 
         async function clearAllData() {
@@ -1273,13 +1307,12 @@
             // Load data in background
             await loadData();
             
-            // Set up auto-refresh interval
+            // Set up auto-refresh interval (every 20s - gives saves enough time to complete before re-loading)
             setInterval(async () => {
-                // Only auto-refresh on certain screens to avoid clearing inputs
                 if (state.view === 'team-select' || state.view === 'menu' || state.view === 'schedule' || state.view === 'results' || state.view === 'standings') {
                     await loadData();
                 }
-            }, 10000); // Changed from 3000ms to 10000ms (10 seconds)
+            }, 20000);
         })();
     </script>
 </body>
