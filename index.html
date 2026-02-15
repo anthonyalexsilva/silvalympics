@@ -123,6 +123,9 @@
             ]}
         ];
 
+        // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
+        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbz6vM4Rs_BvIp3XwxzpodTMCDfM1JWQPWYK3iGM3ECX1e8IofEJxyEzgHn_RUuhNU53yw/exec';
+        
         let state = { view: 'team-select', selectedTeam: null, wagersSaved: false, connectionStatus: 'loading' };
         let data = { teamNames: {}, wagers: {}, results: {}, disabledSchedules: {}, disabledWagers: {} };
         let lastUserAction = Date.now();
@@ -624,43 +627,81 @@
 </div>`;
 
         async function loadData() {
-            try {
-                state.connectionStatus = 'loading';
-                const [tn, wg, rs, ds, dw] = await Promise.all([
-                    window.storage.get('silvalympics:teamNames').catch(() => null),
-                    window.storage.get('silvalympics:wagers').catch(() => null),
-                    window.storage.get('silvalympics:results').catch(() => null),
-                    window.storage.get('silvalympics:disabledSchedules').catch(() => null),
-                    window.storage.get('silvalympics:disabledWagers').catch(() => null)
-                ]);
-                if (tn) try { data.teamNames = JSON.parse(tn.value); } catch(e) {}
-                if (wg) try { data.wagers = JSON.parse(wg.value); } catch(e) {}
-                if (rs) try { data.results = JSON.parse(rs.value); } catch(e) {}
-                if (ds) try { data.disabledSchedules = JSON.parse(ds.value); } catch(e) {}
-                if (dw) try { data.disabledWagers = JSON.parse(dw.value); } catch(e) {}
-                state.connectionStatus = 'connected';
-                render();
-            } catch(e) {
-                console.error('Error loading data:', e);
+            if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
                 state.connectionStatus = 'error';
                 render();
+                return;
+            }
+            
+            // Don't load if we saved recently - prevents overwriting unsaved local changes
+            const timeSinceLastSave = Date.now() - lastSaveTime;
+            if (timeSinceLastSave < 15000) {
+                console.log(`Skipping load - saved ${Math.round(timeSinceLastSave/1000)}s ago`);
+                return;
+            }
+
+            // Don't load while a save is in progress
+            if (isSaving) {
+                console.log('Skipping load - save in progress');
+                return;
+            }
+            
+            try {
+                state.connectionStatus = 'loading';
+                const response = await fetch(BACKEND_URL);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                
+                const serverData = await response.json();
+                
+                if (serverData.teamNames) {
+                    try { data.teamNames = JSON.parse(serverData.teamNames); } catch(e) { data.teamNames = {}; }
+                }
+                if (serverData.wagers) {
+                    try { data.wagers = JSON.parse(serverData.wagers); } catch(e) { data.wagers = {}; }
+                }
+                if (serverData.results) {
+                    try { data.results = JSON.parse(serverData.results); } catch(e) { data.results = {}; }
+                }
+                
+                state.connectionStatus = 'connected';
+                render();
+            } catch (e) {
+                console.error('Error loading data:', e);
+                state.connectionStatus = 'error';
             }
         }
 
         async function saveData() {
+            if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') return;
             if (isSaving) return;
+
             isSaving = true;
+            state.connectionStatus = 'loading';
+
             try {
-                await Promise.all([
-                    window.storage.set('silvalympics:teamNames', JSON.stringify(data.teamNames)),
-                    window.storage.set('silvalympics:wagers', JSON.stringify(data.wagers)),
-                    window.storage.set('silvalympics:results', JSON.stringify(data.results)),
-                    window.storage.set('silvalympics:disabledSchedules', JSON.stringify(data.disabledSchedules || {})),
-                    window.storage.set('silvalympics:disabledWagers', JSON.stringify(data.disabledWagers || {}))
-                ]);
+                // Split into 3 separate GET requests (one per field) so each URL stays
+                // well under Chrome's ~8192 char limit. A single combined payload for all
+                // 20 teams exceeds 16,000 chars, which is why teams 15-20 were silently
+                // failing — the URL was truncated and the save never reached the server.
+                // GET is used throughout because Google Apps Script blocks POST from
+                // external pages (CORS), so the POST fallback was also broken.
+                const fields = {
+                    teamNames: JSON.stringify(data.teamNames),
+                    wagers:    JSON.stringify(data.wagers),
+                    results:   JSON.stringify(data.results)
+                };
+
+                for (const [field, value] of Object.entries(fields)) {
+                    const url = `${BACKEND_URL}?${new URLSearchParams({ action: 'save', field, data: value }).toString()}`;
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`HTTP error saving ${field}: ${response.status}`);
+                    const result = await response.json();
+                    if (result.error) throw new Error(result.error);
+                }
+
                 state.connectionStatus = 'connected';
                 console.log('Data saved successfully');
-            } catch(e) {
+            } catch (e) {
                 console.error('Error saving data:', e);
                 state.connectionStatus = 'error';
             } finally {
@@ -1154,8 +1195,7 @@
                     data.teamNames = {};
                     data.wagers = {};
                     data.results = {};
-                    data.disabledSchedules = {};
-                    data.disabledWagers = {};
+                    lastSaveTime = Date.now();
                     await saveData();
                     alert('All data cleared!');
                     state.view = 'team-select';
@@ -1255,8 +1295,18 @@
         }
 
         (async () => {
-            // Load persisted data first, then render
+            // Render immediately so user sees the interface right away
+            render();
+            
+            // Load data in background
             await loadData();
+            
+            // Set up auto-refresh interval (every 20s - gives saves enough time to complete before re-loading)
+            setInterval(async () => {
+                if (state.view === 'team-select' || state.view === 'menu' || state.view === 'schedule' || state.view === 'results' || state.view === 'standings') {
+                    await loadData();
+                }
+            }, 20000);
         })();
     </script>
 </body>
