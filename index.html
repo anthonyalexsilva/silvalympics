@@ -124,7 +124,7 @@
         ];
 
         // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-        const BACKEND_URL = 'YOUR_SCRIPT_URL_HERE';
+        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbz6vM4Rs_BvIp3XwxzpodTMCDfM1JWQPWYK3iGM3ECX1e8IofEJxyEzgHn_RUuhNU53yw/exec';
         
         let state = { view: 'team-select', selectedTeam: null, wagersSaved: false, connectionStatus: 'loading' };
         let data = { teamNames: {}, wagers: {}, results: {}, disabledSchedules: {}, disabledWagers: {} };
@@ -672,7 +672,7 @@
         }
 
         async function saveData() {
-            if (BACKEND_URL === 'https://script.google.com/macros/s/AKfycbz6vM4Rs_BvIp3XwxzpodTMCDfM1JWQPWYK3iGM3ECX1e8IofEJxyEzgHn_RUuhNU53yw/exec') return;
+            if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') return;
             if (isSaving) return; // Prevent concurrent saves
             
             isSaving = true;
@@ -738,17 +738,17 @@
             }
             lastSaveTime = Date.now();
 
-            // Update buttons in-place without full re-render (Fix #1: prevents scroll jumping to top)
+            // Update buttons in-place without full re-render (prevents scroll jumping to top)
             const winBtn = document.querySelector(`[data-result-key="${key}-win"]`);
             const loseBtn = document.querySelector(`[data-result-key="${key}-lose"]`);
             if (winBtn && loseBtn) {
                 const result = data.results[key];
-                // Win button is active when result equals t1 (the selected team who clicked Win)
-                const winActive = result !== undefined && result === t1;
-                // Lose button is active when result equals t2 (the opponent)
-                const loseActive = result !== undefined && result === t2;
-                winBtn.className = 'win-btn' + (winActive ? ' active' : '');
-                loseBtn.className = 'lose-btn' + (loseActive ? ' active' : '');
+                // Win button onclick passes state.selectedTeam; Lose button passes the opponent.
+                // Read which team each button represents directly from their onclick attribute.
+                const winTeam = parseInt(winBtn.getAttribute('data-win-team'));
+                const loseTeam = parseInt(loseBtn.getAttribute('data-lose-team'));
+                winBtn.className = 'win-btn' + (result !== undefined && result === winTeam ? ' active' : '');
+                loseBtn.className = 'lose-btn' + (result !== undefined && result === loseTeam ? ' active' : '');
             } else {
                 render();
             }
@@ -945,9 +945,11 @@
                                         <div class="result-btns">
                                             <button class="win-btn ${didWin ? 'active' : ''}" 
                                                 data-result-key="${key}-win"
+                                                data-win-team="${state.selectedTeam}"
                                                 onclick="saveResult('${item.time}', ${item.team1}, ${item.team2}, '${item.event}', ${state.selectedTeam})">Win</button>
                                             <button class="lose-btn ${didLose ? 'active' : ''}" 
                                                 data-result-key="${key}-lose"
+                                                data-lose-team="${item.opponent}"
                                                 onclick="saveResult('${item.time}', ${item.team1}, ${item.team2}, '${item.event}', ${item.opponent})">Lose</button>
                                         </div>
                                     </div>
