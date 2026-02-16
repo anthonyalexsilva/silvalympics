@@ -133,6 +133,46 @@
         let lastSaveTime = 0;
         let schedulesEnabled = true;
         let wagersEnabled = true;
+
+        // API quota tracking - resets at midnight, shuts off auto-refresh at 19,000 calls
+        const QUOTA_WARNING_LIMIT = 19000;
+        const QUOTA_DAY_KEY = 'silvalympics_quota_day';
+        const QUOTA_COUNT_KEY = 'silvalympics_quota_count';
+        let apiCallCount = 0;
+        let quotaExceeded = false;
+
+        function getTodayString() {
+            return new Date().toISOString().slice(0, 10); // e.g. "2026-06-14"
+        }
+
+        function loadQuotaCount() {
+            try {
+                const day = localStorage.getItem(QUOTA_DAY_KEY);
+                const today = getTodayString();
+                if (day === today) {
+                    apiCallCount = parseInt(localStorage.getItem(QUOTA_COUNT_KEY) || '0');
+                } else {
+                    // New day - reset counter
+                    apiCallCount = 0;
+                    localStorage.setItem(QUOTA_DAY_KEY, today);
+                    localStorage.setItem(QUOTA_COUNT_KEY, '0');
+                }
+                quotaExceeded = apiCallCount >= QUOTA_WARNING_LIMIT;
+            } catch(e) { apiCallCount = 0; }
+        }
+
+        function incrementQuotaCount() {
+            try {
+                apiCallCount++;
+                localStorage.setItem(QUOTA_COUNT_KEY, String(apiCallCount));
+                localStorage.setItem(QUOTA_DAY_KEY, getTodayString());
+                if (apiCallCount >= QUOTA_WARNING_LIMIT && !quotaExceeded) {
+                    quotaExceeded = true;
+                    dbg('QUOTA WARNING: ' + apiCallCount + ' API calls today — auto-refresh disabled, manual refresh only');
+                    alert('⚠️ API quota warning: ' + apiCallCount.toLocaleString() + ' calls made today. Auto-refresh has been disabled to protect the remaining quota. You can still use the Manual Refresh button on the Standings page.');
+                }
+            } catch(e) {}
+        }
         
         const EVENT_RULES = {
             'Mölkky': `<div style="padding: 0 20px;">
@@ -655,6 +695,10 @@
                 return;
             }
             
+            // Track quota usage
+            incrementQuotaCount();
+            dbg('loadData: API call #' + apiCallCount + ' today');
+
             try {
                 state.connectionStatus = 'loading';
                 dbg('loadData: fetching from server...');
@@ -828,9 +872,21 @@
             return standings;
         }
 
+        let lastRenderedView = null;
+
         function render() {
             console.time('render');
             
+            // Load fresh data whenever the user navigates to a new page
+            // (but not on first load since initApp handles that, and not during saves)
+            if (lastRenderedView !== null && lastRenderedView !== state.view && !isSaving) {
+                const timeSinceLastSave = Date.now() - lastSaveTime;
+                if (timeSinceLastSave >= 15000) {
+                    loadData(); // fire and forget - non-blocking
+                }
+            }
+            lastRenderedView = state.view;
+
             // Save scroll position before rendering (only restore for views where it matters)
             const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
             const preserveScroll = (state.view === 'results' || state.view === 'wagers' || state.view === 'standings');
@@ -1022,6 +1078,15 @@
                             <div>🔵 Seeds 7-10: Wild Card Round</div>
                             <div>🔴 Seeds 11-20: Eliminated</div>
                         </div>
+                        <button class="menu-btn" style="background: #2563eb; margin-top: 10px;" onclick="manualRefreshStandings()">🔄 Manual Refresh</button>
+                        ${quotaExceeded
+                            ? `<p style="text-align:center; color:#dc2626; font-size:12px; margin-top:8px; font-weight:bold;">
+                                ⚠️ Auto-refresh disabled (${apiCallCount.toLocaleString()} API calls today).<br>Use Manual Refresh for updates.
+                               </p>`
+                            : `<p style="text-align: center; color: #9ca3af; font-size: 12px; margin-top: 8px;">
+                                Standings automatically refresh every 60 seconds.<br>For an instant refresh, click Manual Refresh.
+                               </p>`
+                        }
                     </div>
                 `;
             } else if (state.view === 'rules') {
@@ -1066,6 +1131,7 @@
                         <div style="background:#f3f4f6; border-radius:8px; padding:12px; margin-bottom:16px; font-size:13px;">
                             <strong>Backend URL:</strong> ${backendSet ? '✅ Set (' + BACKEND_URL.slice(0,50) + '...)' : '❌ NOT SET — still placeholder'}<br>
                             <strong>Connection:</strong> ${state.connectionStatus}<br>
+                            <strong>API calls today:</strong> ${apiCallCount.toLocaleString()} / 19,000 ${quotaExceeded ? '⚠️ LIMIT REACHED — auto-refresh OFF' : '✅'}<br>
                             <strong>Teams with names:</strong> ${Object.keys(data.teamNames).length}<br>
                             <strong>Teams with wagers:</strong> ${Object.keys(data.wagers).length}<br>
                             <strong>Result entries:</strong> ${Object.keys(data.results).length}
@@ -1243,6 +1309,12 @@
             }, 800);
         }
 
+        async function manualRefreshStandings() {
+            // Manual refresh always works — even if auto-refresh quota is exceeded
+            lastSaveTime = 0;
+            await loadData();
+        }
+
         async function testConnection() {
             if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
                 dbg('TEST FAILED: BACKEND_URL is still the placeholder');
@@ -1385,18 +1457,27 @@
         }
 
         (async () => {
+            // Load quota count from localStorage (persists across page refreshes)
+            loadQuotaCount();
+            dbg('Startup: ' + apiCallCount + ' API calls already made today' + (quotaExceeded ? ' — QUOTA LIMIT REACHED' : ''));
+
             // Render immediately so user sees the interface right away
             render();
             
-            // Load data in background
+            // Load data in background on startup
             await loadData();
             
-            // Set up auto-refresh interval (every 20s - gives saves enough time to complete before re-loading)
+            // Standings-only auto-refresh every 60 seconds.
+            // Disabled automatically if daily quota reaches 19,000 calls.
             setInterval(async () => {
-                if (state.view === 'team-select' || state.view === 'menu' || state.view === 'schedule' || state.view === 'results' || state.view === 'standings') {
-                    await loadData();
+                if (state.view === 'standings') {
+                    if (quotaExceeded) {
+                        dbg('Auto-refresh skipped — quota limit reached (' + apiCallCount + ' calls today). Use Manual Refresh.');
+                    } else {
+                        await loadData();
+                    }
                 }
-            }, 20000);
+            }, 60000);
         })();
     </script>
 </body>
