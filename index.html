@@ -72,6 +72,7 @@
         .toggle-schedule-btn:hover { background: #ea580c; }
         .disabled { opacity: 0.5; cursor: not-allowed !important; background: #9ca3af !important; }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
     <div class="container" id="app"></div>
@@ -1118,6 +1119,7 @@
                         <p style="text-align: center; color: #666; margin-bottom: 30px;">Administrative functions for managing the Silvalympics</p>
                         <button class="menu-btn orange" onclick="state.view='toggle-schedules-menu'; render()">🔄 Toggle Schedules</button>
                         <button class="menu-btn blue" onclick="state.view='toggle-wagers-menu'; render()">🎯 Toggle Wagers</button>
+                        <button class="menu-btn green" onclick="exportResults()">📊 Export Results</button>
                         <button class="menu-btn red" onclick="clearAllData()">🗑️ Clear All Data</button>
                         <button class="menu-btn" style="background:#374151;" onclick="state.view='debug'; render()">🔍 Debug / Connection Log</button>
                     </div>
@@ -1349,6 +1351,127 @@
             isSaving = false;
             await loadData();
             render();
+        }
+
+        function exportResults() {
+            const wb = XLSX.utils.book_new();
+
+            // ── Helper styles ─────────────────────────────────────────────
+            const headerFill  = { fgColor: { rgb: '1E3A5F' } };
+            const winFill     = { fgColor: { rgb: 'D1FAE5' } };
+            const loseFill    = { fgColor: { rgb: 'FEE2E2' } };
+            const goldFill    = { fgColor: { rgb: 'FEF3C7' } };
+            const blueFill    = { fgColor: { rgb: 'DBEAFE' } };
+            const redFill     = { fgColor: { rgb: 'FFE4E6' } };
+
+            function hdrCell(v) {
+                return { v, t: 's', s: { font: { bold: true, color: { rgb: 'FFFFFF' }, name: 'Arial', sz: 11 }, fill: headerFill, alignment: { horizontal: 'center' } } };
+            }
+            function cell(v, bold, fill, align) {
+                const s = { font: { name: 'Arial', sz: 11, bold: !!bold }, alignment: { horizontal: align || 'left' } };
+                if (fill) s.fill = fill;
+                return { v: v === undefined || v === null ? '' : v, t: typeof v === 'number' ? 'n' : 's', s };
+            }
+            function numCell(v, bold, fill) {
+                return { v: v === undefined || v === null ? 0 : v, t: 'n', s: { font: { name: 'Arial', sz: 11, bold: !!bold }, alignment: { horizontal: 'center' }, fill: fill || undefined } };
+            }
+
+            // ── Standings tab ─────────────────────────────────────────────
+            const standings = calculateStandings();
+            const sData = [
+                [ hdrCell('Rank'), hdrCell('Team'), hdrCell('Players'), hdrCell('Wins'), hdrCell('Losses'), hdrCell('Total Wager Pts'), hdrCell('Playoff Status') ]
+            ];
+            standings.forEach((team, idx) => {
+                let status = 'Eliminated';
+                let rowFill = redFill;
+                if (idx < 6)       { status = '🏆 BYE';     rowFill = goldFill; }
+                else if (idx < 10) { status = '🎯 Playoff'; rowFill = blueFill; }
+                sData.push([
+                    numCell(idx + 1, idx < 6, rowFill),
+                    cell(`Team ${team.team}`, idx < 6, rowFill),
+                    cell(team.name, false, rowFill),
+                    numCell(team.wins, false, rowFill),
+                    numCell(team.losses, false, rowFill),
+                    numCell(team.wagerPoints, false, rowFill),
+                    cell(status, false, rowFill, 'center')
+                ]);
+            });
+            const sSheet = XLSX.utils.aoa_to_sheet(sData);
+            sSheet['!cols'] = [{ wch: 6 }, { wch: 10 }, { wch: 28 }, { wch: 8 }, { wch: 8 }, { wch: 16 }, { wch: 16 }];
+            XLSX.utils.book_append_sheet(wb, sSheet, 'Standings');
+
+            // ── One tab per team ──────────────────────────────────────────
+            for (let teamNum = 1; teamNum <= 20; teamNum++) {
+                const teamName = getTeamName(teamNum);
+                const teamWagers = data.wagers[teamNum] || {};
+                const schedule = getTeamSchedule(teamNum);
+
+                const rows = [
+                    [ hdrCell('Time'), hdrCell('Event'), hdrCell('Opponent'), hdrCell('Wager'), hdrCell('Result') ]
+                ];
+
+                schedule.forEach(item => {
+                    if (item.event === 'Break' || item.event === 'Pizza!') return;
+                    const opponentName = item.opponent ? getTeamName(item.opponent) : '—';
+                    const wager = teamWagers[item.event] !== undefined ? teamWagers[item.event] : '—';
+                    const resultKey = getResultKey(item.time, item.team1, item.team2, item.event);
+                    const stored = data.results[resultKey];
+                    let resultText = '—';
+                    let resultFill = null;
+                    if (stored !== undefined) {
+                        if (stored === teamNum) { resultText = 'Win';  resultFill = winFill; }
+                        else                    { resultText = 'Lose'; resultFill = loseFill; }
+                    }
+                    rows.push([
+                        cell(item.time, false, null, 'center'),
+                        cell(item.event),
+                        cell(opponentName),
+                        typeof wager === 'number' ? numCell(wager, false, null) : cell(wager, false, null, 'center'),
+                        cell(resultText, true, resultFill, 'center')
+                    ]);
+                });
+
+                // Summary row at the bottom
+                const teamStanding = standings.find(s => s.team === teamNum);
+                const wins   = teamStanding ? teamStanding.wins : 0;
+                const losses = teamStanding ? teamStanding.losses : 0;
+                const wagerPts = teamStanding ? teamStanding.wagerPoints : 0;
+                const rank   = teamStanding ? standings.indexOf(teamStanding) + 1 : '—';
+                rows.push([]); // blank spacer
+                rows.push([
+                    cell(''),
+                    cell('TOTALS', true, null),
+                    cell(''),
+                    numCell(Object.values(teamWagers).reduce((s, v) => s + (parseInt(v) || 0), 0), true),
+                    cell(`${wins}W - ${losses}L`, true, null, 'center')
+                ]);
+                rows.push([
+                    cell(''),
+                    cell('Rank', true),
+                    cell(''),
+                    cell('Wager Pts', true),
+                    cell('')
+                ]);
+                rows.push([
+                    cell(''),
+                    cell('#' + rank, true, null, 'center'),
+                    cell(''),
+                    numCell(wagerPts, true),
+                    cell('')
+                ]);
+
+                const tSheet = XLSX.utils.aoa_to_sheet(rows);
+                tSheet['!cols'] = [{ wch: 10 }, { wch: 24 }, { wch: 28 }, { wch: 8 }, { wch: 8 }];
+
+                // Sheet name: "T1 - Smith & Jones" truncated to 31 chars (Excel limit)
+                const rawName = `T${teamNum} - ${teamName}`;
+                const sheetName = rawName.length > 31 ? rawName.slice(0, 31) : rawName;
+                XLSX.utils.book_append_sheet(wb, tSheet, sheetName);
+            }
+
+            // ── Download ──────────────────────────────────────────────────
+            const date = new Date().toISOString().slice(0, 10);
+            XLSX.writeFile(wb, `Silvalympics_Results_${date}.xlsx`);
         }
 
         async function clearAllData() {
