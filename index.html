@@ -1313,6 +1313,7 @@
             // Manual refresh always works — even if auto-refresh quota is exceeded
             lastSaveTime = 0;
             await loadData();
+            window.scrollTo(0, 0);
         }
 
         async function testConnection() {
