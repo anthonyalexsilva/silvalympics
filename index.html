@@ -124,7 +124,7 @@
         ];
 
         // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbz6vM4Rs_BvIp3XwxzpodTMCDfM1JWQPWYK3iGM3ECX1e8IofEJxyEzgHn_RUuhNU53yw/exec';
+        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwL_wOQXwuwNJSSHn6Uw0TqMvF2tuWI16-yGILuOp-2uautXucl17OTuD3vccGVzBuhkQ/exec';
         
         let state = { view: 'team-select', selectedTeam: null, wagersSaved: false, connectionStatus: 'loading' };
         let data = { teamNames: {}, wagers: {}, results: {}, disabledSchedules: {}, disabledWagers: {} };
@@ -626,65 +626,93 @@
 </ul>
 </div>`;
 
+        // Debug log - keeps last 20 messages, shown in debug panel
+        const debugLog = [];
+        function dbg(msg, obj) {
+            const line = new Date().toISOString().slice(11,19) + ' ' + msg + (obj !== undefined ? ': ' + JSON.stringify(obj) : '');
+            debugLog.push(line);
+            if (debugLog.length > 20) debugLog.shift();
+            console.log(line);
+            const el = document.getElementById('debug-log');
+            if (el) el.textContent = debugLog.slice().reverse().join('\n');
+        }
+
         async function loadData() {
             if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
                 state.connectionStatus = 'error';
+                dbg('ERROR: BACKEND_URL is still the placeholder - please set your Google Apps Script URL');
                 render();
                 return;
             }
             
-            // Don't load if we saved recently - prevents overwriting unsaved local changes
             const timeSinceLastSave = Date.now() - lastSaveTime;
             if (timeSinceLastSave < 15000) {
-                console.log(`Skipping load - saved ${Math.round(timeSinceLastSave/1000)}s ago`);
+                dbg('Skipping load - saved ' + Math.round(timeSinceLastSave/1000) + 's ago');
                 return;
             }
-
-            // Don't load while a save is in progress
             if (isSaving) {
-                console.log('Skipping load - save in progress');
+                dbg('Skipping load - save in progress');
                 return;
             }
             
             try {
                 state.connectionStatus = 'loading';
+                dbg('loadData: fetching from server...');
                 const response = await fetch(BACKEND_URL);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                dbg('loadData: response status', response.status);
+                if (!response.ok) throw new Error('HTTP error! status: ' + response.status);
                 
                 const serverData = await response.json();
+                dbg('loadData: raw response keys', Object.keys(serverData));
                 
                 if (serverData.teamNames) {
-                    try { data.teamNames = JSON.parse(serverData.teamNames); } catch(e) { data.teamNames = {}; }
+                    try { 
+                        data.teamNames = JSON.parse(serverData.teamNames);
+                        dbg('loadData: teamNames loaded', Object.keys(data.teamNames).length + ' teams');
+                    } catch(e) { data.teamNames = {}; dbg('loadData: teamNames parse error', e.message); }
+                } else {
+                    dbg('loadData: no teamNames in response');
                 }
                 if (serverData.wagers) {
-                    try { data.wagers = JSON.parse(serverData.wagers); } catch(e) { data.wagers = {}; }
+                    try { 
+                        data.wagers = JSON.parse(serverData.wagers);
+                        dbg('loadData: wagers loaded', Object.keys(data.wagers).length + ' teams');
+                    } catch(e) { data.wagers = {}; dbg('loadData: wagers parse error', e.message); }
+                } else {
+                    dbg('loadData: no wagers in response');
                 }
                 if (serverData.results) {
-                    try { data.results = JSON.parse(serverData.results); } catch(e) { data.results = {}; }
+                    try { 
+                        data.results = JSON.parse(serverData.results);
+                        dbg('loadData: results loaded', Object.keys(data.results).length + ' entries');
+                    } catch(e) { data.results = {}; dbg('loadData: results parse error', e.message); }
+                } else {
+                    dbg('loadData: no results in response');
                 }
                 
                 state.connectionStatus = 'connected';
+                dbg('loadData: complete - rendering');
                 render();
             } catch (e) {
-                console.error('Error loading data:', e);
+                dbg('loadData ERROR', e.message);
                 state.connectionStatus = 'error';
             }
         }
 
         async function saveData() {
-            if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') return;
-            if (isSaving) return;
+            if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
+                dbg('ERROR: BACKEND_URL is placeholder - not saving');
+                return;
+            }
+            if (isSaving) {
+                dbg('saveData: skipping - already saving');
+                return;
+            }
 
             isSaving = true;
             state.connectionStatus = 'loading';
 
             try {
-                // Split into 3 separate GET requests (one per field) so each URL stays
-                // well under Chrome's ~8192 char limit. A single combined payload for all
-                // 20 teams exceeds 16,000 chars, which is why teams 15-20 were silently
-                // failing — the URL was truncated and the save never reached the server.
-                // GET is used throughout because Google Apps Script blocks POST from
-                // external pages (CORS), so the POST fallback was also broken.
                 const fields = {
                     teamNames: JSON.stringify(data.teamNames),
                     wagers:    JSON.stringify(data.wagers),
@@ -692,17 +720,23 @@
                 };
 
                 for (const [field, value] of Object.entries(fields)) {
-                    const url = `${BACKEND_URL}?${new URLSearchParams({ action: 'save', field, data: value }).toString()}`;
+                    const url = BACKEND_URL + '?' + new URLSearchParams({ action: 'save', field: field, data: value }).toString();
+                    dbg('saveData: saving ' + field + ' (' + value.length + ' chars, URL ' + url.length + ' chars)');
                     const response = await fetch(url);
-                    if (!response.ok) throw new Error(`HTTP error saving ${field}: ${response.status}`);
-                    const result = await response.json();
+                    dbg('saveData: ' + field + ' response status', response.status);
+                    if (!response.ok) throw new Error('HTTP error saving ' + field + ': ' + response.status);
+                    const text = await response.text();
+                    dbg('saveData: ' + field + ' raw response', text.slice(0, 200));
+                    let result;
+                    try { result = JSON.parse(text); } catch(e) { throw new Error('Non-JSON response for ' + field + ': ' + text.slice(0,100)); }
                     if (result.error) throw new Error(result.error);
+                    dbg('saveData: ' + field + ' saved OK', result);
                 }
 
                 state.connectionStatus = 'connected';
-                console.log('Data saved successfully');
+                dbg('saveData: ALL FIELDS SAVED SUCCESSFULLY');
             } catch (e) {
-                console.error('Error saving data:', e);
+                dbg('saveData ERROR', e.message);
                 state.connectionStatus = 'error';
             } finally {
                 isSaving = false;
@@ -1020,6 +1054,27 @@
                         <button class="menu-btn orange" onclick="state.view='toggle-schedules-menu'; render()">🔄 Toggle Schedules</button>
                         <button class="menu-btn blue" onclick="state.view='toggle-wagers-menu'; render()">🎯 Toggle Wagers</button>
                         <button class="menu-btn red" onclick="clearAllData()">🗑️ Clear All Data</button>
+                        <button class="menu-btn" style="background:#374151;" onclick="state.view='debug'; render()">🔍 Debug / Connection Log</button>
+                    </div>
+                `;
+            } else if (state.view === 'debug') {
+                const backendSet = BACKEND_URL !== 'YOUR_SCRIPT_URL_HERE';
+                app.innerHTML = `
+                    <button class="back-btn" onclick="state.view='admin'; render()">← Back to Admin Controls</button>
+                    <div class="card">
+                        <h2 class="card-title">🔍 Debug / Connection Log</h2>
+                        <div style="background:#f3f4f6; border-radius:8px; padding:12px; margin-bottom:16px; font-size:13px;">
+                            <strong>Backend URL:</strong> ${backendSet ? '✅ Set (' + BACKEND_URL.slice(0,50) + '...)' : '❌ NOT SET — still placeholder'}<br>
+                            <strong>Connection:</strong> ${state.connectionStatus}<br>
+                            <strong>Teams with names:</strong> ${Object.keys(data.teamNames).length}<br>
+                            <strong>Teams with wagers:</strong> ${Object.keys(data.wagers).length}<br>
+                            <strong>Result entries:</strong> ${Object.keys(data.results).length}
+                        </div>
+                        <button class="menu-btn" style="background:#2563eb; margin-bottom:10px;" onclick="testConnection()">▶ Test Connection Now</button>
+                        <button class="menu-btn" style="background:#059669; margin-bottom:10px;" onclick="forceSave()">💾 Force Save Now</button>
+                        <button class="menu-btn" style="background:#7c3aed; margin-bottom:16px;" onclick="forceLoad()">🔄 Force Load Now</button>
+                        <div style="font-size:12px; font-weight:bold; margin-bottom:4px; color:#374151;">Log (newest first):</div>
+                        <pre id="debug-log" style="background:#111827; color:#10b981; font-size:11px; padding:12px; border-radius:8px; overflow-x:auto; white-space:pre-wrap; max-height:400px; overflow-y:auto;">${debugLog.slice().reverse().join('\n') || 'No log entries yet.'}</pre>
                     </div>
                 `;
             } else if (state.view === 'toggle-schedules-menu') {
@@ -1186,6 +1241,41 @@
                 state.view = 'menu';
                 render();
             }, 800);
+        }
+
+        async function testConnection() {
+            if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
+                dbg('TEST FAILED: BACKEND_URL is still the placeholder');
+                return;
+            }
+            try {
+                const url = BACKEND_URL + '?action=test';
+                dbg('testConnection: fetching ' + url.slice(0, 80));
+                const response = await fetch(url);
+                dbg('testConnection: status', response.status);
+                const text = await response.text();
+                dbg('testConnection: response', text.slice(0, 300));
+                render(); // refresh debug panel
+            } catch(e) {
+                dbg('testConnection ERROR', e.message);
+                render();
+            }
+        }
+
+        async function forceSave() {
+            dbg('forceSave: triggered manually');
+            lastSaveTime = 0;
+            isSaving = false;
+            await saveData();
+            render();
+        }
+
+        async function forceLoad() {
+            dbg('forceLoad: triggered manually');
+            lastSaveTime = 0;
+            isSaving = false;
+            await loadData();
+            render();
         }
 
         async function clearAllData() {
