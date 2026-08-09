@@ -767,41 +767,48 @@
             isSaving = true;
             state.connectionStatus = 'loading';
 
-            try {
-                const fields = {
-                    teamNames: JSON.stringify(data.teamNames),
-                    wagers:    JSON.stringify(data.wagers),
-                    results:   JSON.stringify(data.results),
-                    settings:  JSON.stringify({
-                        schedulesEnabled: data.schedulesEnabled,
-                        wagersEnabled: data.wagersEnabled,
-                        disabledSchedules: data.disabledSchedules || {},
-                        disabledWagers: data.disabledWagers || {}
-                    })
-                };
+            const fields = {
+                teamNames: JSON.stringify(data.teamNames),
+                wagers:    JSON.stringify(data.wagers),
+                results:   JSON.stringify(data.results),
+                settings:  JSON.stringify({
+                    schedulesEnabled: data.schedulesEnabled,
+                    wagersEnabled: data.wagersEnabled,
+                    disabledSchedules: data.disabledSchedules || {},
+                    disabledWagers: data.disabledWagers || {}
+                })
+            };
 
-                for (const [field, value] of Object.entries(fields)) {
+            const failures = [];
+
+            // Save each field independently so one failure doesn't block the rest
+            for (const [field, value] of Object.entries(fields)) {
+                try {
                     const url = BACKEND_URL + '?' + new URLSearchParams({ action: 'save', field: field, data: value }).toString();
-                    dbg('saveData: saving ' + field + ' (' + value.length + ' chars, URL ' + url.length + ' chars)');
                     const response = await fetch(url);
-                    dbg('saveData: ' + field + ' response status', response.status);
-                    if (!response.ok) throw new Error('HTTP error saving ' + field + ': ' + response.status);
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
                     const text = await response.text();
-                    dbg('saveData: ' + field + ' raw response', text.slice(0, 200));
                     let result;
-                    try { result = JSON.parse(text); } catch(e) { throw new Error('Non-JSON response for ' + field + ': ' + text.slice(0,100)); }
+                    try { result = JSON.parse(text); } catch(e) { throw new Error('Non-JSON response: ' + text.slice(0,100)); }
                     if (result.error) throw new Error(result.error);
-                    dbg('saveData: ' + field + ' saved OK', result);
+                    dbg('saveData: ' + field + ' saved OK');
+                } catch (e) {
+                    failures.push(field + ': ' + e.message);
+                    dbg('saveData: ' + field + ' FAILED', e.message);
+                    if (field === 'settings' && /unknown field/i.test(e.message)) {
+                        dbg('WARNING: Your Google Apps Script is out of date - it does not recognize the "settings" field yet. Re-paste the updated .gs code and REDEPLOY (Deploy -> Manage deployments -> Edit -> New version -> Deploy). Saving the editor alone does not update the live script.');
+                    }
                 }
+            }
 
+            if (failures.length === 0) {
                 state.connectionStatus = 'connected';
                 dbg('saveData: ALL FIELDS SAVED SUCCESSFULLY');
-            } catch (e) {
-                dbg('saveData ERROR', e.message);
+            } else {
                 state.connectionStatus = 'error';
-            } finally {
-                isSaving = false;
+                dbg('saveData: completed with ' + failures.length + ' failure(s)', failures);
             }
+            isSaving = false;
         }
 
         function getTeamName(num) {
