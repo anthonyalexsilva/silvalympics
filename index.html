@@ -1189,9 +1189,67 @@
                         <p style="text-align: center; color: #666; margin-bottom: 30px;">Administrative functions for managing the Silvalympics</p>
                         <button class="menu-btn orange" onclick="state.view='toggle-schedules-menu'; render()">🔄 Toggle Schedules</button>
                         <button class="menu-btn blue" onclick="state.view='toggle-wagers-menu'; render()">🎯 Toggle Wagers</button>
+                        <button class="menu-btn" style="background:#0891b2;" onclick="state.view='wager-status'; render()">📋 Wager Status by Team</button>
                         <button class="menu-btn green" onclick="exportResults()">📊 Export Results</button>
                         <button class="menu-btn red" onclick="clearAllData()">🗑️ Clear All Data</button>
                         <button class="menu-btn" style="background:#374151;" onclick="state.view='debug'; render()">🔍 Debug / Connection Log</button>
+                    </div>
+                `;
+            } else if (state.view === 'wager-status') {
+                const rows = [...Array(20)].map((_, i) => {
+                    const teamNum = i + 1;
+                    const teamWagers = data.wagers[teamNum] || {};
+                    const enteredCount = EVENTS.filter(ev => teamWagers[ev] !== undefined && teamWagers[ev] !== '' && teamWagers[ev] !== null).length;
+                    const total = EVENTS.reduce((sum, ev) => sum + (parseInt(teamWagers[ev]) || 0), 0);
+
+                    let statusLabel, statusColor, statusIcon;
+                    if (enteredCount === 0) {
+                        statusLabel = 'Blank - Not Started';
+                        statusColor = '#dc2626';
+                        statusIcon = '⬜';
+                    } else if (enteredCount < EVENTS.length || total !== 50) {
+                        statusLabel = `Incomplete (${enteredCount}/${EVENTS.length} events, total ${total}/50)`;
+                        statusColor = '#d97706';
+                        statusIcon = '🟡';
+                    } else {
+                        statusLabel = 'Complete & Valid (total = 50)';
+                        statusColor = '#059669';
+                        statusIcon = '✅';
+                    }
+
+                    return `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid #e5e7eb;">
+                            <div>
+                                <div style="font-weight:bold;">${statusIcon} Team ${teamNum}</div>
+                                <div style="font-size:12px; color:#6b7280;">${getTeamName(teamNum)}</div>
+                            </div>
+                            <div style="text-align:right; color:${statusColor}; font-weight:600; font-size:13px; max-width:55%;">
+                                ${statusLabel}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                const blankCount = [...Array(20)].filter((_, i) => Object.keys(data.wagers[i+1] || {}).length === 0).length;
+                const completeCount = [...Array(20)].filter((_, i) => {
+                    const tw = data.wagers[i+1] || {};
+                    const cnt = EVENTS.filter(ev => tw[ev] !== undefined && tw[ev] !== '' && tw[ev] !== null).length;
+                    const tot = EVENTS.reduce((sum, ev) => sum + (parseInt(tw[ev]) || 0), 0);
+                    return cnt === EVENTS.length && tot === 50;
+                }).length;
+
+                app.innerHTML = `
+                    <button class="back-btn" onclick="state.view='admin'; render()">← Back to Admin Controls</button>
+                    <div class="card">
+                        <h2 class="card-title">📋 Wager Status by Team</h2>
+                        <div style="display:flex; justify-content:center; gap:20px; margin-bottom:20px; font-size:13px;">
+                            <div>✅ Complete: <strong>${completeCount}</strong></div>
+                            <div>🟡 Incomplete: <strong>${20 - completeCount - blankCount}</strong></div>
+                            <div>⬜ Blank: <strong>${blankCount}</strong></div>
+                        </div>
+                        <div style="border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+                            ${rows}
+                        </div>
                     </div>
                 `;
             } else if (state.view === 'debug') {
