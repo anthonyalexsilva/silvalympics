@@ -125,7 +125,7 @@
         ];
 
         // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwL_wOQXwuwNJSSHn6Uw0TqMvF2tuWI16-yGILuOp-2uautXucl17OTuD3vccGVzBuhkQ/exec';
+        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbx1sdLGR_arxwD-a9j7Iz3NTj0VNLW84JAYvaC09v1jMzoZJ9241aKnRyR_c5haV2ZcNg/exec';
         
         let state = { view: 'team-select', selectedTeam: null, wagersSaved: false, connectionStatus: 'loading' };
         let data = { teamNames: {}, wagers: {}, results: {}, disabledSchedules: {}, disabledWagers: {}, schedulesEnabled: true, wagersEnabled: true };
@@ -735,14 +735,18 @@
                 if (serverData.settings) {
                     try {
                         const s = JSON.parse(serverData.settings);
-                        data.schedulesEnabled = s.schedulesEnabled !== undefined ? s.schedulesEnabled : true;
-                        data.wagersEnabled = s.wagersEnabled !== undefined ? s.wagersEnabled : true;
-                        data.disabledSchedules = s.disabledSchedules || {};
-                        data.disabledWagers = s.disabledWagers || {};
+                        // Only overwrite local state when the server actually has a value for it.
+                        // If the settings field is empty/missing (e.g. script not yet redeployed,
+                        // or nothing has ever been toggled), keep whatever is currently in memory
+                        // instead of silently forcing it back to "enabled".
+                        if (s.schedulesEnabled !== undefined) data.schedulesEnabled = s.schedulesEnabled;
+                        if (s.wagersEnabled !== undefined) data.wagersEnabled = s.wagersEnabled;
+                        if (s.disabledSchedules !== undefined) data.disabledSchedules = s.disabledSchedules;
+                        if (s.disabledWagers !== undefined) data.disabledWagers = s.disabledWagers;
                         dbg('loadData: settings loaded', s);
                     } catch(e) { dbg('loadData: settings parse error', e.message); }
                 } else {
-                    dbg('loadData: no settings in response - using defaults');
+                    dbg('loadData: no settings in response - keeping current local values');
                 }
                 
                 state.connectionStatus = 'connected';
@@ -1159,8 +1163,11 @@
                             <strong>API calls today:</strong> ${apiCallCount.toLocaleString()} / 19,000 ${quotaExceeded ? '⚠️ LIMIT REACHED — auto-refresh OFF' : '✅'}<br>
                             <strong>Teams with names:</strong> ${Object.keys(data.teamNames).length}<br>
                             <strong>Teams with wagers:</strong> ${Object.keys(data.wagers).length}<br>
-                            <strong>Result entries:</strong> ${Object.keys(data.results).length}
+                            <strong>Result entries:</strong> ${Object.keys(data.results).length}<br>
+                            <strong>Schedules Enabled (local):</strong> ${data.schedulesEnabled ? '✅ ON' : '🔴 OFF'}<br>
+                            <strong>Wagers Enabled (local):</strong> ${data.wagersEnabled ? '✅ ON' : '🔴 OFF'}
                         </div>
+                        <button class="menu-btn" style="background:#f59e0b; margin-bottom:10px;" onclick="checkSettingsSync()">🔬 Check Settings Sync With Server</button>
                         <button class="menu-btn" style="background:#2563eb; margin-bottom:10px;" onclick="testConnection()">▶ Test Connection Now</button>
                         <button class="menu-btn" style="background:#059669; margin-bottom:10px;" onclick="forceSave()">💾 Force Save Now</button>
                         <button class="menu-btn" style="background:#7c3aed; margin-bottom:16px;" onclick="forceLoad()">🔄 Force Load Now</button>
@@ -1339,6 +1346,36 @@
             lastSaveTime = 0;
             await loadData();
             window.scrollTo(0, 0);
+        }
+
+        async function checkSettingsSync() {
+            if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
+                dbg('checkSettingsSync: BACKEND_URL not set');
+                render();
+                return;
+            }
+            try {
+                dbg('checkSettingsSync: fetching raw server data...');
+                const response = await fetch(BACKEND_URL);
+                const serverData = await response.json();
+
+                if (!('settings' in serverData)) {
+                    dbg('❌ SCRIPT OUT OF DATE: server response has no "settings" key at all. Your Google Apps Script has NOT been redeployed with the updated code. Go to Deploy → Manage deployments → Edit → New version → Deploy.');
+                } else if (serverData.settings === '{}' || !serverData.settings) {
+                    dbg('⚠️ Script is updated, but settings has never been saved yet (empty {}). Try toggling schedules again now, then re-run this check.');
+                } else {
+                    try {
+                        const s = JSON.parse(serverData.settings);
+                        dbg('✅ Server settings found', s);
+                        dbg('Server says schedulesEnabled = ' + s.schedulesEnabled + ', wagersEnabled = ' + s.wagersEnabled);
+                    } catch(e) {
+                        dbg('❌ settings field exists but is not valid JSON: ' + serverData.settings.slice(0,200));
+                    }
+                }
+            } catch(e) {
+                dbg('checkSettingsSync ERROR', e.message);
+            }
+            render();
         }
 
         async function testConnection() {
