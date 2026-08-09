@@ -128,12 +128,10 @@
         const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwL_wOQXwuwNJSSHn6Uw0TqMvF2tuWI16-yGILuOp-2uautXucl17OTuD3vccGVzBuhkQ/exec';
         
         let state = { view: 'team-select', selectedTeam: null, wagersSaved: false, connectionStatus: 'loading' };
-        let data = { teamNames: {}, wagers: {}, results: {}, disabledSchedules: {}, disabledWagers: {} };
+        let data = { teamNames: {}, wagers: {}, results: {}, disabledSchedules: {}, disabledWagers: {}, schedulesEnabled: true, wagersEnabled: true };
         let lastUserAction = Date.now();
         let isSaving = false;
         let lastSaveTime = 0;
-        let schedulesEnabled = true;
-        let wagersEnabled = true;
 
         // API quota tracking - resets at midnight, shuts off auto-refresh at 19,000 calls
         const QUOTA_WARNING_LIMIT = 19000;
@@ -734,6 +732,18 @@
                 } else {
                     dbg('loadData: no results in response');
                 }
+                if (serverData.settings) {
+                    try {
+                        const s = JSON.parse(serverData.settings);
+                        data.schedulesEnabled = s.schedulesEnabled !== undefined ? s.schedulesEnabled : true;
+                        data.wagersEnabled = s.wagersEnabled !== undefined ? s.wagersEnabled : true;
+                        data.disabledSchedules = s.disabledSchedules || {};
+                        data.disabledWagers = s.disabledWagers || {};
+                        dbg('loadData: settings loaded', s);
+                    } catch(e) { dbg('loadData: settings parse error', e.message); }
+                } else {
+                    dbg('loadData: no settings in response - using defaults');
+                }
                 
                 state.connectionStatus = 'connected';
                 dbg('loadData: complete - rendering');
@@ -761,7 +771,13 @@
                 const fields = {
                     teamNames: JSON.stringify(data.teamNames),
                     wagers:    JSON.stringify(data.wagers),
-                    results:   JSON.stringify(data.results)
+                    results:   JSON.stringify(data.results),
+                    settings:  JSON.stringify({
+                        schedulesEnabled: data.schedulesEnabled,
+                        wagersEnabled: data.wagersEnabled,
+                        disabledSchedules: data.disabledSchedules || {},
+                        disabledWagers: data.disabledWagers || {}
+                    })
                 };
 
                 for (const [field, value] of Object.entries(fields)) {
@@ -909,7 +925,7 @@
                     </div>
                 `;
             } else if (state.view === 'menu') {
-                const teamScheduleEnabled = schedulesEnabled && (!data.disabledSchedules || !data.disabledSchedules[state.selectedTeam]);
+                const teamScheduleEnabled = data.schedulesEnabled && (!data.disabledSchedules || !data.disabledSchedules[state.selectedTeam]);
                 const scheduleBtn = teamScheduleEnabled
                     ? '<button class="menu-btn purple" onclick="state.view=\'schedule\'; render()">📅 View Schedule</button>'
                     : '<button class="menu-btn purple disabled" style="pointer-events: none;">📅 View Schedule</button>';
@@ -951,7 +967,7 @@
                 const teamWagers = data.wagers[state.selectedTeam] || {};
                 const total = Object.values(teamWagers).reduce((sum, val) => sum + (parseInt(val) || 0), 0);
                 const totalClass = total === 50 ? 'valid' : 'invalid';
-                const canEditWagers = wagersEnabled && (!data.disabledWagers || !data.disabledWagers[state.selectedTeam]);
+                const canEditWagers = data.wagersEnabled && (!data.disabledWagers || !data.disabledWagers[state.selectedTeam]);
                 const disabledAttr = canEditWagers ? '' : 'disabled';
                 const readOnlyMessage = canEditWagers ? '' : '<div style="background: #fee2e2; color: #991b1b; border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: center; font-weight: bold;">⚠️ Wager editing is currently disabled. You can view but not change your wagers.</div>';
                 
@@ -1481,6 +1497,10 @@
                     data.teamNames = {};
                     data.wagers = {};
                     data.results = {};
+                    data.disabledSchedules = {};
+                    data.disabledWagers = {};
+                    data.schedulesEnabled = true;
+                    data.wagersEnabled = true;
                     lastSaveTime = Date.now();
                     await saveData();
                     alert('All data cleared!');
@@ -1495,9 +1515,11 @@
         function toggleAllSchedules() {
             const code = prompt('Enter 4-digit code to toggle schedules for all teams:');
             if (code === '0820') {
-                schedulesEnabled = !schedulesEnabled;
-                alert(schedulesEnabled ? 'Schedules enabled for all teams!' : 'Schedules disabled for all teams!');
+                data.schedulesEnabled = !data.schedulesEnabled;
+                alert(data.schedulesEnabled ? 'Schedules enabled for all teams!' : 'Schedules disabled for all teams!');
+                lastSaveTime = Date.now();
                 render();
+                saveData();
             } else if (code !== null) {
                 alert('Incorrect code!');
             }
@@ -1528,9 +1550,11 @@
         function toggleAllWagers() {
             const code = prompt('Enter 4-digit code to toggle wagers for all teams:');
             if (code === '0820') {
-                wagersEnabled = !wagersEnabled;
-                alert(wagersEnabled ? 'Wager editing enabled for all teams!' : 'Wager editing disabled for all teams!');
+                data.wagersEnabled = !data.wagersEnabled;
+                alert(data.wagersEnabled ? 'Wager editing enabled for all teams!' : 'Wager editing disabled for all teams!');
+                lastSaveTime = Date.now();
                 render();
+                saveData();
             } else if (code !== null) {
                 alert('Incorrect code!');
             }
