@@ -128,7 +128,7 @@
         const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbx1sdLGR_arxwD-a9j7Iz3NTj0VNLW84JAYvaC09v1jMzoZJ9241aKnRyR_c5haV2ZcNg/exec';
         
         let state = { view: 'team-select', selectedTeam: null, wagersSaved: false, connectionStatus: 'loading' };
-        let data = { teamNames: {}, wagers: {}, results: {}, disabledSchedules: {}, disabledWagers: {}, schedulesEnabled: true, wagersEnabled: true };
+        let data = { teamNames: {}, wagers: {}, results: {}, scheduleOverride: {}, wagerOverride: {}, schedulesEnabled: true, wagersEnabled: true };
         let lastUserAction = Date.now();
         let isSaving = false;
         let lastSaveTime = 0;
@@ -744,8 +744,27 @@
                         // instead of silently forcing it back to "enabled".
                         if (s.schedulesEnabled !== undefined) data.schedulesEnabled = s.schedulesEnabled;
                         if (s.wagersEnabled !== undefined) data.wagersEnabled = s.wagersEnabled;
-                        if (s.disabledSchedules !== undefined) data.disabledSchedules = s.disabledSchedules;
-                        if (s.disabledWagers !== undefined) data.disabledWagers = s.disabledWagers;
+
+                        if (s.scheduleOverride !== undefined) {
+                            data.scheduleOverride = s.scheduleOverride;
+                        } else if (s.disabledSchedules !== undefined) {
+                            // Migrate old block-list format (true = force disabled) to new override map
+                            data.scheduleOverride = {};
+                            Object.keys(s.disabledSchedules).forEach(team => {
+                                if (s.disabledSchedules[team]) data.scheduleOverride[team] = false;
+                            });
+                        }
+
+                        if (s.wagerOverride !== undefined) {
+                            data.wagerOverride = s.wagerOverride;
+                        } else if (s.disabledWagers !== undefined) {
+                            // Migrate old block-list format (true = force disabled) to new override map
+                            data.wagerOverride = {};
+                            Object.keys(s.disabledWagers).forEach(team => {
+                                if (s.disabledWagers[team]) data.wagerOverride[team] = false;
+                            });
+                        }
+
                         dbg('loadData: settings loaded', s);
                     } catch(e) { dbg('loadData: settings parse error', e.message); }
                 } else {
@@ -781,8 +800,8 @@
                 settings:  JSON.stringify({
                     schedulesEnabled: data.schedulesEnabled,
                     wagersEnabled: data.wagersEnabled,
-                    disabledSchedules: data.disabledSchedules || {},
-                    disabledWagers: data.disabledWagers || {}
+                    scheduleOverride: data.scheduleOverride || {},
+                    wagerOverride: data.wagerOverride || {}
                 })
             };
 
@@ -823,6 +842,24 @@
 
         function getTeamName(num) {
             return data.teamNames[num] || `Team ${num}`;
+        }
+
+        // Effective schedule status = per-team override if one is explicitly set,
+        // otherwise follow the global schedulesEnabled switch.
+        function isScheduleEnabledForTeam(teamNum) {
+            if (data.scheduleOverride && Object.prototype.hasOwnProperty.call(data.scheduleOverride, teamNum)) {
+                return !!data.scheduleOverride[teamNum];
+            }
+            return !!data.schedulesEnabled;
+        }
+
+        // Effective wager-editing status = per-team override if one is explicitly set,
+        // otherwise follow the global wagersEnabled switch.
+        function isWagerEnabledForTeam(teamNum) {
+            if (data.wagerOverride && Object.prototype.hasOwnProperty.call(data.wagerOverride, teamNum)) {
+                return !!data.wagerOverride[teamNum];
+            }
+            return !!data.wagersEnabled;
         }
 
         function getResultKey(time, t1, t2, event) {
@@ -942,7 +979,7 @@
                     </div>
                 `;
             } else if (state.view === 'menu') {
-                const teamScheduleEnabled = data.schedulesEnabled && (!data.disabledSchedules || !data.disabledSchedules[state.selectedTeam]);
+                const teamScheduleEnabled = isScheduleEnabledForTeam(state.selectedTeam);
                 const scheduleBtn = teamScheduleEnabled
                     ? '<button class="menu-btn purple" onclick="state.view=\'schedule\'; render()">📅 View Schedule</button>'
                     : '<button class="menu-btn purple disabled" style="pointer-events: none;">📅 View Schedule</button>';
@@ -984,7 +1021,7 @@
                 const teamWagers = data.wagers[state.selectedTeam] || {};
                 const total = Object.values(teamWagers).reduce((sum, val) => sum + (parseInt(val) || 0), 0);
                 const totalClass = total === 50 ? 'valid' : 'invalid';
-                const canEditWagers = data.wagersEnabled && (!data.disabledWagers || !data.disabledWagers[state.selectedTeam]);
+                const canEditWagers = isWagerEnabledForTeam(state.selectedTeam);
                 const disabledAttr = canEditWagers ? '' : 'disabled';
                 const readOnlyMessage = canEditWagers ? '' : '<div style="background: #fee2e2; color: #991b1b; border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: center; font-weight: bold;">⚠️ Wager editing is currently disabled. You can view but not change your wagers.</div>';
                 
@@ -1210,7 +1247,7 @@
                         <div class="team-grid">
                             ${[...Array(20)].map((_, i) => {
                                 const teamNum = i + 1;
-                                const hasSchedule = !data.disabledSchedules || !data.disabledSchedules[teamNum];
+                                const hasSchedule = isScheduleEnabledForTeam(teamNum);
                                 return `
                                     <button class="team-btn" onclick="toggleIndividualSchedule(${teamNum})" style="position: relative;">
                                         <div class="team-num">Team ${teamNum}</div>
@@ -1233,7 +1270,7 @@
                         <div class="team-grid">
                             ${[...Array(20)].map((_, i) => {
                                 const teamNum = i + 1;
-                                const canEditWagers = !data.disabledWagers || !data.disabledWagers[teamNum];
+                                const canEditWagers = isWagerEnabledForTeam(teamNum);
                                 return `
                                     <button class="team-btn" onclick="toggleIndividualWagers(${teamNum})" style="position: relative;">
                                         <div class="team-num">Team ${teamNum}</div>
@@ -1547,8 +1584,8 @@
                     data.teamNames = {};
                     data.wagers = {};
                     data.results = {};
-                    data.disabledSchedules = {};
-                    data.disabledWagers = {};
+                    data.scheduleOverride = {};
+                    data.wagerOverride = {};
                     data.schedulesEnabled = true;
                     data.wagersEnabled = true;
                     lastSaveTime = Date.now();
@@ -1578,17 +1615,15 @@
         function toggleIndividualSchedule(teamNum) {
             const code = prompt(`Enter 4-digit code to toggle schedule for Team ${teamNum}:`);
             if (code === '0820') {
-                if (!data.disabledSchedules) data.disabledSchedules = {};
-                
-                // Toggle: if currently disabled, enable it (remove from list); if enabled, disable it (add to list)
-                if (data.disabledSchedules[teamNum]) {
-                    delete data.disabledSchedules[teamNum];
-                    alert(`Schedule enabled for Team ${teamNum}!`);
-                } else {
-                    data.disabledSchedules[teamNum] = true;
-                    alert(`Schedule disabled for Team ${teamNum}!`);
-                }
-                
+                if (!data.scheduleOverride) data.scheduleOverride = {};
+
+                // Flip the team's current EFFECTIVE status (global + any existing override)
+                // and store that as an explicit override, so it holds regardless of the
+                // global Toggle All Schedules switch.
+                const currentlyEnabled = isScheduleEnabledForTeam(teamNum);
+                data.scheduleOverride[teamNum] = !currentlyEnabled;
+                alert(`Schedule ${!currentlyEnabled ? 'enabled' : 'disabled'} for Team ${teamNum}!`);
+
                 lastSaveTime = Date.now();
                 render();
                 saveData();
@@ -1613,17 +1648,15 @@
         function toggleIndividualWagers(teamNum) {
             const code = prompt(`Enter 4-digit code to toggle wagers for Team ${teamNum}:`);
             if (code === '0820') {
-                if (!data.disabledWagers) data.disabledWagers = {};
-                
-                // Toggle: if currently disabled, enable it (remove from list); if enabled, disable it (add to list)
-                if (data.disabledWagers[teamNum]) {
-                    delete data.disabledWagers[teamNum];
-                    alert(`Wager editing enabled for Team ${teamNum}!`);
-                } else {
-                    data.disabledWagers[teamNum] = true;
-                    alert(`Wager editing disabled for Team ${teamNum}!`);
-                }
-                
+                if (!data.wagerOverride) data.wagerOverride = {};
+
+                // Flip the team's current EFFECTIVE status (global + any existing override)
+                // and store that as an explicit override, so it holds regardless of the
+                // global Toggle All Wagers switch.
+                const currentlyEnabled = isWagerEnabledForTeam(teamNum);
+                data.wagerOverride[teamNum] = !currentlyEnabled;
+                alert(`Wager editing ${!currentlyEnabled ? 'enabled' : 'disabled'} for Team ${teamNum}!`);
+
                 lastSaveTime = Date.now();
                 render();
                 saveData();
