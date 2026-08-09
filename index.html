@@ -1224,7 +1224,8 @@
                     <div class="card">
                         <h2 class="card-title">Toggle Schedules</h2>
                         <p style="text-align: center; color: #666; margin-bottom: 30px;">Choose how to toggle schedule access</p>
-                        <button class="menu-btn orange" onclick="toggleAllSchedules()">🔄 Toggle Schedules (All Teams)</button>
+                        <button class="menu-btn green" onclick="setAllSchedules(true)">✅ Enable All Teams</button>
+                        <button class="menu-btn red" onclick="setAllSchedules(false)">🔴 Disable All Teams</button>
                         <button class="menu-btn purple" onclick="state.view='toggle-individual'; render()">🔄 Toggle Schedules (Individual Team)</button>
                     </div>
                 `;
@@ -1234,7 +1235,8 @@
                     <div class="card">
                         <h2 class="card-title">Toggle Wagers</h2>
                         <p style="text-align: center; color: #666; margin-bottom: 30px;">Choose how to toggle wager editing</p>
-                        <button class="menu-btn blue" onclick="toggleAllWagers()">🎯 Toggle Wagers (All Teams)</button>
+                        <button class="menu-btn green" onclick="setAllWagers(true)">✅ Enable All Teams</button>
+                        <button class="menu-btn red" onclick="setAllWagers(false)">🔴 Disable All Teams</button>
                         <button class="menu-btn green" onclick="state.view='toggle-wagers-individual'; render()">🎯 Toggle Wagers (Individual Team)</button>
                     </div>
                 `;
@@ -1599,11 +1601,14 @@
             }
         }
         
-        function toggleAllSchedules() {
-            const code = prompt('Enter 4-digit code to toggle schedules for all teams:');
+        function setAllSchedules(enabled) {
+            const code = prompt(`Enter 4-digit code to ${enabled ? 'enable' : 'disable'} schedules for ALL teams:`);
             if (code === '0820') {
-                data.schedulesEnabled = !data.schedulesEnabled;
-                alert(data.schedulesEnabled ? 'Schedules enabled for all teams!' : 'Schedules disabled for all teams!');
+                data.schedulesEnabled = enabled;
+                // Clear individual overrides so this truly applies to every team,
+                // not just the ones without a personal override set.
+                data.scheduleOverride = {};
+                alert(`Schedules ${enabled ? 'enabled' : 'disabled'} for all teams!`);
                 lastSaveTime = Date.now();
                 render();
                 saveData();
@@ -1632,11 +1637,14 @@
             }
         }
         
-        function toggleAllWagers() {
-            const code = prompt('Enter 4-digit code to toggle wagers for all teams:');
+        function setAllWagers(enabled) {
+            const code = prompt(`Enter 4-digit code to ${enabled ? 'enable' : 'disable'} wagers for ALL teams:`);
             if (code === '0820') {
-                data.wagersEnabled = !data.wagersEnabled;
-                alert(data.wagersEnabled ? 'Wager editing enabled for all teams!' : 'Wager editing disabled for all teams!');
+                data.wagersEnabled = enabled;
+                // Clear individual overrides so this truly applies to every team,
+                // not just the ones without a personal override set.
+                data.wagerOverride = {};
+                alert(`Wager editing ${enabled ? 'enabled' : 'disabled'} for all teams!`);
                 lastSaveTime = Date.now();
                 render();
                 saveData();
