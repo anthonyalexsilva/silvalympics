@@ -922,11 +922,30 @@
 
         function saveResult(time, t1, t2, event, winner) {
             const key = getResultKey(time, t1, t2, event);
-            if (data.results[key] === winner) {
+            const existing = data.results[key];
+
+            if (existing === winner) {
+                // Clicking the same outcome that's already recorded = undo it
                 delete data.results[key];
+            } else if (existing !== undefined) {
+                // A DIFFERENT result is already recorded for this match - this can happen
+                // if the other team already entered their result. Never silently overwrite
+                // it; require explicit confirmation so a result can't flip without anyone
+                // realizing why.
+                const existingName = getTeamName(existing);
+                const newName = getTeamName(winner);
+                const confirmed = confirm(
+                    `This match is already recorded as a win for ${existingName}.\n\n` +
+                    `Are you sure you want to change it so ${newName} is the winner instead?`
+                );
+                if (!confirmed) {
+                    return; // leave everything exactly as it was
+                }
+                data.results[key] = winner;
             } else {
                 data.results[key] = winner;
             }
+
             lastSaveTime = Date.now();
 
             // Update buttons in-place without full re-render (prevents scroll jumping to top)
