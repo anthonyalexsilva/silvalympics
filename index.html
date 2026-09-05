@@ -780,7 +780,49 @@
             }
         }
 
-        async function saveData() {
+        // Safely update ONE key within a server-stored object (teamNames, wagers, or
+        // results) without touching anything else in that object. This is essential
+        // because multiple teams save concurrently — if we ever re-uploaded our whole
+        // local copy of the field, we'd silently overwrite other teams' changes that
+        // happened after we last loaded. The server merges this single key under a
+        // lock, so two teams saving at the same instant can never collide.
+        async function mergeField(field, key, value) {
+            if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
+                dbg('ERROR: BACKEND_URL is placeholder - not saving');
+                return false;
+            }
+            const isDelete = value === undefined;
+            try {
+                state.connectionStatus = 'loading';
+                const params = new URLSearchParams({
+                    action: 'merge',
+                    field: field,
+                    key: String(key),
+                    del: isDelete ? '1' : '0',
+                    _: Date.now()
+                });
+                if (!isDelete) params.set('value', JSON.stringify(value));
+                const url = BACKEND_URL + '?' + params.toString();
+                const response = await fetch(url, { cache: 'no-store' });
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const text = await response.text();
+                let result;
+                try { result = JSON.parse(text); } catch(e) { throw new Error('Non-JSON response: ' + text.slice(0,150)); }
+                if (result.error) throw new Error(result.error);
+                dbg('mergeField: ' + field + '[' + key + '] saved OK' + (isDelete ? ' (deleted)' : ''));
+                state.connectionStatus = 'connected';
+                return true;
+            } catch(e) {
+                dbg('mergeField ERROR: ' + field + '[' + key + ']', e.message);
+                if (/unknown merge field/i.test(e.message)) {
+                    dbg('WARNING: Your Google Apps Script is out of date - it does not support the "merge" action yet. Re-paste the updated .gs code and REDEPLOY.');
+                }
+                state.connectionStatus = 'error';
+                return false;
+            }
+        }
+
+        async function saveData(fieldsToSave) {
             if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
                 dbg('ERROR: BACKEND_URL is placeholder - not saving');
                 return;
@@ -793,7 +835,7 @@
             isSaving = true;
             state.connectionStatus = 'loading';
 
-            const fields = {
+            const allFields = {
                 teamNames: JSON.stringify(data.teamNames),
                 wagers:    JSON.stringify(data.wagers),
                 results:   JSON.stringify(data.results),
@@ -804,6 +846,14 @@
                     wagerOverride: data.wagerOverride || {}
                 })
             };
+
+            // By default only 'settings' is sent — this function is now only used for
+            // admin-level actions (toggles) and a full reset (clearAllData). Individual
+            // team saves (names, wagers, results) go through mergeField() instead so
+            // concurrent teams never stomp on each other's data.
+            const fieldNames = fieldsToSave || ['settings'];
+            const fields = {};
+            fieldNames.forEach(f => { fields[f] = allFields[f]; });
 
             const failures = [];
 
@@ -893,7 +943,9 @@
             } else {
                 render();
             }
-            saveData();
+            // Merge just this one result key so concurrent teams entering results
+            // at the same time never overwrite each other's saved results.
+            mergeField('results', key, data.results[key]);
         }
 
         function getTeamSchedule(teamNum) {
@@ -1376,7 +1428,9 @@
                 state.view = 'menu';
                 lastSaveTime = Date.now(); // Block auto-refresh
                 render(); // Update UI immediately
-                saveData(); // Save in background (no await)
+                // Merge just this team's name so concurrent teams entering their
+                // names at the same time never overwrite each other's entries.
+                mergeField('teamNames', state.selectedTeam, data.teamNames[state.selectedTeam]);
             }
         }
 
@@ -1435,7 +1489,9 @@
 
             lastSaveTime = Date.now();
             state.wagersSaved = true;
-            saveData(); // Save in background
+            // Merge just this team's wagers so concurrent teams saving wagers at
+            // the same time never overwrite each other's entries.
+            mergeField('wagers', state.selectedTeam, teamWagers);
             // Update #3: go back to team menu after saving
             setTimeout(() => {
                 state.wagersSaved = false;
@@ -1649,7 +1705,7 @@
                     data.schedulesEnabled = true;
                     data.wagersEnabled = true;
                     lastSaveTime = Date.now();
-                    await saveData();
+                    await saveData(['teamNames', 'wagers', 'results', 'settings']);
                     alert('All data cleared!');
                     state.view = 'team-select';
                     render();
