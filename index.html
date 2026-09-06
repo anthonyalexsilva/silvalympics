@@ -75,6 +75,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
+    <div id="sync-banner" style="display:none; position:sticky; top:0; z-index:9999; background:#dc2626; color:white; text-align:center; padding:8px 12px; font-size:13px; font-weight:600;"></div>
     <div class="container" id="app"></div>
 
     <script>
@@ -128,9 +129,11 @@
         const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbx1sdLGR_arxwD-a9j7Iz3NTj0VNLW84JAYvaC09v1jMzoZJ9241aKnRyR_c5haV2ZcNg/exec';
         
         let state = { view: 'team-select', selectedTeam: null, wagersSaved: false, connectionStatus: 'loading' };
-        let data = { teamNames: {}, wagers: {}, results: {}, scheduleOverride: {}, wagerOverride: {}, schedulesEnabled: true, wagersEnabled: true };
+        let data = { teamNames: {}, wagers: {}, results: {}, scheduleOverride: {}, wagerOverride: {}, schedulesEnabled: true, wagersEnabled: true, resultsEnabled: true, wheelEliminated: [], wheelLastResult: null, playoffsEnabled: false, playoffSeeds: [] };
         let lastUserAction = Date.now();
         let isSaving = false;
+        let wheelCurrentRotation = 0; // accumulated rotation in degrees, always increases so spins never look like they snap backward
+        let wheelSpinning = false;
         let lastSaveTime = 0;
 
         // API quota tracking - resets at midnight, shuts off auto-refresh at 19,000 calls
@@ -139,6 +142,70 @@
         const QUOTA_COUNT_KEY = 'silvalympics_quota_count';
         let apiCallCount = 0;
         let quotaExceeded = false;
+
+        // ── Durable pending-save queue ──────────────────────────────────
+        // If a save fails (e.g. the server lock times out because many people
+        // are saving at once), the change is NOT lost - it's queued here and
+        // retried automatically until it succeeds, and a banner tells the
+        // person their change hasn't synced yet. Persisted to localStorage so
+        // even closing/reopening the browser doesn't lose a pending change.
+        const PENDING_OPS_KEY = 'silvalympics_pending_ops';
+        let pendingOps = [];
+        let retryInFlight = false;
+
+        function loadPendingOps() {
+            try {
+                const raw = localStorage.getItem(PENDING_OPS_KEY);
+                pendingOps = raw ? JSON.parse(raw) : [];
+            } catch(e) { pendingOps = []; }
+        }
+
+        function savePendingOps() {
+            try { localStorage.setItem(PENDING_OPS_KEY, JSON.stringify(pendingOps)); } catch(e) {}
+        }
+
+        function updateSyncBanner() {
+            const banner = document.getElementById('sync-banner');
+            if (!banner) return;
+            if (pendingOps.length > 0) {
+                banner.style.display = 'block';
+                banner.innerHTML = `⚠️ ${pendingOps.length} change${pendingOps.length > 1 ? 's' : ''} not yet synced — retrying automatically... ` +
+                    `<button onclick="retryPendingOps()" style="margin-left:8px; background:white; color:#dc2626; border:none; border-radius:4px; padding:3px 10px; font-weight:700; cursor:pointer;">Retry Now</button>`;
+            } else {
+                banner.style.display = 'none';
+                banner.innerHTML = '';
+            }
+        }
+
+        function queuePendingOp(field, key, value) {
+            // Replace any existing pending op for the same field+key - only the latest value matters
+            pendingOps = pendingOps.filter(op => !(op.field === field && op.key === key));
+            pendingOps.push({ field, key, value, isDelete: value === undefined, addedAt: Date.now() });
+            savePendingOps();
+            updateSyncBanner();
+        }
+
+        async function retryPendingOps() {
+            if (retryInFlight || pendingOps.length === 0) return;
+            retryInFlight = true;
+            dbg('retryPendingOps: attempting ' + pendingOps.length + ' pending op(s)');
+
+            const stillPending = [];
+            for (const op of pendingOps) {
+                const success = await mergeFieldAttempt(op.field, op.key, op.isDelete ? undefined : op.value);
+                if (!success) stillPending.push(op);
+            }
+            pendingOps = stillPending;
+            savePendingOps();
+            updateSyncBanner();
+            retryInFlight = false;
+
+            if (pendingOps.length === 0) {
+                dbg('retryPendingOps: all pending ops synced successfully');
+            } else {
+                dbg('retryPendingOps: ' + pendingOps.length + ' op(s) still pending');
+            }
+        }
 
         function getTodayString() {
             return new Date().toISOString().slice(0, 10); // e.g. "2026-06-14"
@@ -251,7 +318,7 @@
 <h3 style="font-weight: bold; margin-bottom: 10px; margin-top: 20px;">Scoring</h3>
 <ul style="list-style-type: disc; list-style-position: outside; padding-left: 40px; margin-bottom: 15px;">
 <li style="margin-bottom: 8px;">At the end of each frame, points will be awarded.</li>
-<li style="margin-bottom: 8px;">Only one team scores in a frame. A team scores between 1 and 4 points per frame.</li>
+<li style="margin-bottom: 8px;">Only one team scores in a frame. A team scores between 1 and 4 points per frame (except if a Bocce ball is touching the pallina, an extra point is awarded, and more than 4 points may be scored per frame).</li>
 <li style="margin-bottom: 8px;">One point is awarded for each ball that is closer to the pallina than the closest ball of the opposing team.</li>
 <li style="margin-bottom: 8px;">In the event that the closest ball of each team is the same distance from the pallina, no points will be awarded and the pallina returns to the team that delivered it.</li>
 <li style="margin-bottom: 8px;">Only balls which are distinguishably closer to the pallina than any of the opponent's balls are awarded points.</li>
@@ -572,7 +639,7 @@
 <h3 style="font-weight: bold; margin-bottom: 10px; margin-top: 20px;">Scoring</h3>
 <ul style="list-style-type: disc; list-style-position: outside; padding-left: 40px; margin-bottom: 15px;">
 <li style="margin-bottom: 8px;">At the end of each frame, points will be awarded.</li>
-<li style="margin-bottom: 8px;">Only one team scores in a frame. A team scores between 1 and 4 points per frame.</li>
+<li style="margin-bottom: 8px;">Only one team scores in a frame. A team scores between 1 and 4 points per frame (except if a ball is touching the pallina, an extra point is awarded, and more than 4 points may be scored per frame).</li>
 <li style="margin-bottom: 8px;">One point is awarded for each ball that is closer to the pallina than the closest ball of the opposing team.</li>
 <li style="margin-bottom: 8px;">In the event that the closest ball of each team is the same distance from the pallina, no points will be awarded and the pallina returns to the team that delivered it.</li>
 <li style="margin-bottom: 8px;">Only balls which are distinguishably closer to the pallina than any of the opponent's balls are awarded points.</li>
@@ -621,7 +688,7 @@
   <li style="margin-bottom: 10px;">The top 10 teams advance to the playoffs.
     <ul style="list-style-type: circle; list-style-position: outside; padding-left: 40px; margin-top: 8px;">
       <li style="margin-bottom: 8px;">Tiebreakers are solved with the "point wagering" system designed at the outset.</li>
-      <li style="margin-bottom: 8px;">Higher Seed goes first to start off each game.</li>
+      <li style="margin-bottom: 8px;">Higher Seed goes first to start off each game in all rounds (including the Wild Card Round).</li>
     </ul>
   </li>
   <li style="margin-bottom: 10px;">Wild Card Round
@@ -641,7 +708,7 @@
   </li>
   <li style="margin-bottom: 10px;">Choice of Games
     <ul style="list-style-type: circle; list-style-position: outside; padding-left: 40px; margin-top: 8px;">
-      <li style="margin-bottom: 8px;">For each game in the playoffs, the highest seed team will pick a game out of a hat.</li>
+      <li style="margin-bottom: 8px;">For each game in the playoffs, the highest seed team will randomly pick a game.</li>
       <li style="margin-bottom: 8px;">Once the game is picked, the higher seed has the choice to play that game or redraw among the remaining events. Only one redraw (veto) is allowed.</li>
       <li style="margin-bottom: 8px;">Once two teams are given a game to play, the next highest seed picks one of the remaining games out of a hat.</li>
     </ul>
@@ -744,6 +811,11 @@
                         // instead of silently forcing it back to "enabled".
                         if (s.schedulesEnabled !== undefined) data.schedulesEnabled = s.schedulesEnabled;
                         if (s.wagersEnabled !== undefined) data.wagersEnabled = s.wagersEnabled;
+                        if (s.resultsEnabled !== undefined) data.resultsEnabled = s.resultsEnabled;
+                        if (s.wheelEliminated !== undefined) data.wheelEliminated = s.wheelEliminated;
+                        if (s.wheelLastResult !== undefined) data.wheelLastResult = s.wheelLastResult;
+                        if (s.playoffsEnabled !== undefined) data.playoffsEnabled = s.playoffsEnabled;
+                        if (s.playoffSeeds !== undefined) data.playoffSeeds = s.playoffSeeds;
 
                         if (s.scheduleOverride !== undefined) {
                             data.scheduleOverride = s.scheduleOverride;
@@ -786,7 +858,9 @@
         // local copy of the field, we'd silently overwrite other teams' changes that
         // happened after we last loaded. The server merges this single key under a
         // lock, so two teams saving at the same instant can never collide.
-        async function mergeField(field, key, value) {
+        // Single attempt only - no retry logic here. Used both for the initial
+        // save attempt and for retrying queued pending ops.
+        async function mergeFieldAttempt(field, key, value) {
             if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
                 dbg('ERROR: BACKEND_URL is placeholder - not saving');
                 return false;
@@ -822,6 +896,35 @@
             }
         }
 
+        // Public save function used by the app. Tries immediately; if the server
+        // is busy (e.g. lock timeout from many concurrent saves) it retries a
+        // couple of times with a short delay, and if it still fails, queues the
+        // change durably so it's retried automatically in the background and
+        // visibly flagged to the user via the sync banner - instead of silently
+        // being lost.
+        async function mergeField(field, key, value) {
+            const attempts = 3;
+            const delays = [1000, 3000]; // wait between retry attempts
+            for (let i = 0; i < attempts; i++) {
+                const success = await mergeFieldAttempt(field, key, value);
+                if (success) {
+                    // If this exact change was previously queued as pending, clear it
+                    pendingOps = pendingOps.filter(op => !(op.field === field && op.key === key));
+                    savePendingOps();
+                    updateSyncBanner();
+                    return true;
+                }
+                if (i < attempts - 1) {
+                    dbg('mergeField: retrying ' + field + '[' + key + '] in ' + delays[i] + 'ms (attempt ' + (i + 2) + '/' + attempts + ')');
+                    await new Promise(r => setTimeout(r, delays[i]));
+                }
+            }
+            // All immediate attempts failed - queue it for durable background retry
+            dbg('mergeField: giving up after ' + attempts + ' attempts, queueing ' + field + '[' + key + '] for background retry');
+            queuePendingOp(field, key, value);
+            return false;
+        }
+
         async function saveData(fieldsToSave) {
             if (BACKEND_URL === 'YOUR_SCRIPT_URL_HERE') {
                 dbg('ERROR: BACKEND_URL is placeholder - not saving');
@@ -842,8 +945,13 @@
                 settings:  JSON.stringify({
                     schedulesEnabled: data.schedulesEnabled,
                     wagersEnabled: data.wagersEnabled,
+                    resultsEnabled: data.resultsEnabled,
                     scheduleOverride: data.scheduleOverride || {},
-                    wagerOverride: data.wagerOverride || {}
+                    wagerOverride: data.wagerOverride || {},
+                    wheelEliminated: data.wheelEliminated || [],
+                    wheelLastResult: data.wheelLastResult || null,
+                    playoffsEnabled: data.playoffsEnabled,
+                    playoffSeeds: data.playoffSeeds || []
                 })
             };
 
@@ -982,6 +1090,25 @@
                     }
                 });
             });
+
+            // Append this team's current playoff match, if they're in one
+            if (data.playoffsEnabled) {
+                const info = getCurrentPlayoffInfo();
+                if (info.round && info.round !== 'complete') {
+                    const match = info.matchups.find(m => m.teamA === teamNum || m.teamB === teamNum);
+                    if (match) {
+                        const opponent = match.teamA === teamNum ? match.teamB : match.teamA;
+                        schedule.push({
+                            time: playoffRoundLabel(info.round),
+                            event: 'Playoffs',
+                            opponent: opponent,
+                            isPlayoff: true,
+                            playoffRound: info.round
+                        });
+                    }
+                }
+            }
+
             return schedule;
         }
 
@@ -1014,16 +1141,152 @@
             return standings;
         }
 
+        // ── Playoff bracket logic ────────────────────────────────────────
+        // Playoff results are stored inside the SAME data.results object used
+        // for round-robin results (with a "playoff_" prefixed key), so they get
+        // the exact same safe concurrent-save/merge/lock/retry handling that
+        // was already built for regular results - no new backend work needed.
+
+        function playoffRoundLabel(round) {
+            return { wildcard: 'Wild Card Round', quarterfinal: 'Quarterfinals', semifinal: 'Semifinals', final: 'Finals' }[round] || round;
+        }
+
+        function getPlayoffResultKey(round, a, b) {
+            const lo = Math.min(a, b), hi = Math.max(a, b);
+            return `playoff_${round}_${lo}_${hi}`;
+        }
+
+        function getPlayoffResult(round, a, b) {
+            return data.results[getPlayoffResultKey(round, a, b)];
+        }
+
+        function savePlayoffResult(round, a, b, winner) {
+            const key = getPlayoffResultKey(round, a, b);
+            const existing = data.results[key];
+
+            if (existing === winner) {
+                delete data.results[key];
+            } else if (existing !== undefined) {
+                const confirmed = confirm(
+                    `This match is already recorded as a win for ${getTeamName(existing)}.\n\n` +
+                    `Change it so ${getTeamName(winner)} is the winner instead?`
+                );
+                if (!confirmed) return;
+                data.results[key] = winner;
+            } else {
+                data.results[key] = winner;
+            }
+
+            lastSaveTime = Date.now();
+            render();
+            mergeField('results', key, data.results[key]);
+        }
+
+        // seed(team) = 1-20 based on data.playoffSeeds (frozen at the moment playoffs were turned on)
+        function getSeedForTeam(team) {
+            const idx = (data.playoffSeeds || []).indexOf(team);
+            return idx === -1 ? null : idx + 1;
+        }
+        function getTeamForSeed(seed) {
+            return (data.playoffSeeds || [])[seed - 1];
+        }
+
+        function getWildCardMatchups() {
+            const t7 = getTeamForSeed(7), t10 = getTeamForSeed(10);
+            const t8 = getTeamForSeed(8), t9 = getTeamForSeed(9);
+            return [
+                { teamA: t7, teamB: t10, seedA: 7, seedB: 10, winner: getPlayoffResult('wildcard', t7, t10) },
+                { teamA: t8, teamB: t9, seedA: 8, seedB: 9, winner: getPlayoffResult('wildcard', t8, t9) }
+            ];
+        }
+
+        function getQuarterfinalMatchups() {
+            const wc = getWildCardMatchups();
+            if (wc.some(m => m.winner === undefined)) return null; // wild card not finished yet
+
+            // The two wildcard winners, identified by their own original seed
+            const survivors = wc.map(m => ({ team: m.winner, seed: getSeedForTeam(m.winner) })).sort((a, b) => a.seed - b.seed);
+            const [lowerSurvivor, higherSurvivor] = survivors; // lowerSurvivor has the better (smaller) seed number
+
+            const s1 = getTeamForSeed(1), s2 = getTeamForSeed(2), s3 = getTeamForSeed(3);
+            const s4 = getTeamForSeed(4), s5 = getTeamForSeed(5), s6 = getTeamForSeed(6);
+
+            return [
+                { teamA: s1, teamB: lowerSurvivor.team, seedA: 1, seedB: lowerSurvivor.seed, winner: getPlayoffResult('quarterfinal', s1, lowerSurvivor.team) },
+                { teamA: s2, teamB: higherSurvivor.team, seedA: 2, seedB: higherSurvivor.seed, winner: getPlayoffResult('quarterfinal', s2, higherSurvivor.team) },
+                { teamA: s3, teamB: s6, seedA: 3, seedB: 6, winner: getPlayoffResult('quarterfinal', s3, s6) },
+                { teamA: s4, teamB: s5, seedA: 4, seedB: 5, winner: getPlayoffResult('quarterfinal', s4, s5) }
+            ];
+        }
+
+        function getSemifinalMatchups() {
+            const qf = getQuarterfinalMatchups();
+            if (!qf || qf.some(m => m.winner === undefined)) return null;
+
+            const survivors = qf.map(m => ({ team: m.winner, seed: getSeedForTeam(m.winner) })).sort((a, b) => a.seed - b.seed);
+            // Standard reseed: best remaining seed plays worst remaining seed
+            return [
+                { teamA: survivors[0].team, teamB: survivors[3].team, seedA: survivors[0].seed, seedB: survivors[3].seed, winner: getPlayoffResult('semifinal', survivors[0].team, survivors[3].team) },
+                { teamA: survivors[1].team, teamB: survivors[2].team, seedA: survivors[1].seed, seedB: survivors[2].seed, winner: getPlayoffResult('semifinal', survivors[1].team, survivors[2].team) }
+            ];
+        }
+
+        function getFinalMatchup() {
+            const sf = getSemifinalMatchups();
+            if (!sf || sf.some(m => m.winner === undefined)) return null;
+
+            const survivors = sf.map(m => ({ team: m.winner, seed: getSeedForTeam(m.winner) })).sort((a, b) => a.seed - b.seed);
+            return [
+                { teamA: survivors[0].team, teamB: survivors[1].team, seedA: survivors[0].seed, seedB: survivors[1].seed, winner: getPlayoffResult('final', survivors[0].team, survivors[1].team) }
+            ];
+        }
+
+        // Returns the CURRENT active round's info. Rounds advance automatically and
+        // dynamically the moment all matches in the current round have results.
+        function getCurrentPlayoffInfo() {
+            if (!data.playoffsEnabled || !data.playoffSeeds || data.playoffSeeds.length !== 20) {
+                return { round: null, matchups: [] };
+            }
+
+            const wc = getWildCardMatchups();
+            if (wc.some(m => m.winner === undefined)) {
+                return { round: 'wildcard', matchups: wc };
+            }
+
+            const qf = getQuarterfinalMatchups();
+            if (qf.some(m => m.winner === undefined)) {
+                return { round: 'quarterfinal', matchups: qf };
+            }
+
+            const sf = getSemifinalMatchups();
+            if (sf.some(m => m.winner === undefined)) {
+                return { round: 'semifinal', matchups: sf };
+            }
+
+            const final = getFinalMatchup();
+            if (final[0].winner === undefined) {
+                return { round: 'final', matchups: final };
+            }
+
+            return { round: 'complete', matchups: final, champion: final[0].winner };
+        }
+
         let lastRenderedView = null;
+        let lastNavLoadTime = 0;
 
         function render() {
             console.time('render');
             
-            // Load fresh data whenever the user navigates to a new page
-            // (but not on first load since initApp handles that, and not during saves)
+            // Load fresh data whenever the user navigates to a new page - but throttled
+            // to at most once every 5 seconds. With 20 devices navigating in real time,
+            // reloading on every single click adds a lot of background server traffic
+            // that competes with actual save operations, so this keeps things fresher
+            // than a fixed timer while still limiting the load.
             if (lastRenderedView !== null && lastRenderedView !== state.view && !isSaving) {
                 const timeSinceLastSave = Date.now() - lastSaveTime;
-                if (timeSinceLastSave >= 15000) {
+                const timeSinceLastNavLoad = Date.now() - lastNavLoadTime;
+                if (timeSinceLastSave >= 15000 && timeSinceLastNavLoad >= 5000) {
+                    lastNavLoadTime = Date.now();
                     loadData(); // fire and forget - non-blocking
                 }
             }
@@ -1064,6 +1327,7 @@
                         ${scheduleBtn}
                         <button class="menu-btn orange" onclick="state.view='results'; render()">🏆 Enter Results</button>
                         <button class="menu-btn red" onclick="state.view='standings'; render()">📊 View Standings</button>
+                        ${data.playoffsEnabled ? '<button class="menu-btn" style="background:#f59e0b;" onclick="state.view=\'playoffs\'; render()">🏆 Playoffs</button>' : ''}
                         <button class="menu-btn blue" onclick="state.view='overview'; render()" style="background: #6366f1;">📋 Silvalympics Overview</button>
                     </div>
                 `;
@@ -1131,12 +1395,27 @@
                 `;
             } else if (state.view === 'schedule') {
                 const schedule = getTeamSchedule(state.selectedTeam);
+                const myWagers = data.wagers[state.selectedTeam] || {};
                 app.innerHTML = `
                     <button class="back-btn" onclick="state.view='menu'; render()">← Back to Menu</button>
                     <div class="card">
                         <h2 class="card-title">${getTeamName(state.selectedTeam)} Schedule</h2>
                         <div class="scrollable">
-                            ${schedule.map(item => `
+                            ${schedule.map(item => {
+                                if (item.isPlayoff) {
+                                    return `
+                                        <div class="schedule-item" style="border-left:4px solid #f59e0b;">
+                                            <div class="schedule-time">🏆 ${item.time}</div>
+                                            <div class="schedule-event" style="cursor:pointer; text-decoration:underline;" onclick="state.view='playoffs'; render()">View Playoff Bracket</div>
+                                            <div class="schedule-vs">vs ${getTeamName(item.opponent)}</div>
+                                        </div>
+                                    `;
+                                }
+                                const showWagers = item.opponent && item.event !== 'Break' && item.event !== 'Pizza!';
+                                const myWager = showWagers ? myWagers[item.event] : undefined;
+                                const oppWagers = showWagers ? (data.wagers[item.opponent] || {}) : {};
+                                const oppWager = showWagers ? oppWagers[item.event] : undefined;
+                                return `
                                 <div class="schedule-item">
                                     <div class="schedule-time">${item.time}</div>
                                     <div class="schedule-event" style="${item.event !== 'Break' && item.event !== 'Pizza!' ? 'cursor: pointer; text-decoration: underline;' : ''}" 
@@ -1144,13 +1423,35 @@
                                         ${item.event}
                                     </div>
                                     ${item.opponent && item.event !== 'Break' ? `<div class="schedule-vs">vs ${getTeamName(item.opponent)}</div>` : ''}
+                                    ${showWagers ? `
+                                        <div style="display:flex; gap:16px; margin-top:6px; font-size:12px; color:#6b7280;">
+                                            <div><strong>Your wager:</strong> ${myWager !== undefined ? myWager : '—'}</div>
+                                            <div><strong>Their wager:</strong> ${oppWager !== undefined ? oppWager : '—'}</div>
+                                        </div>
+                                    ` : ''}
                                 </div>
-                            `).join('')}
+                            `;
+                            }).join('')}
                         </div>
                     </div>
                 `;
             } else if (state.view === 'results') {
                 const schedule = getTeamSchedule(state.selectedTeam);
+                const myWagers = data.wagers[state.selectedTeam] || {};
+
+                if (!data.resultsEnabled) {
+                    app.innerHTML = `
+                        <button class="back-btn" onclick="state.view='menu'; render()">← Back to Menu</button>
+                        <div class="card">
+                            <h2 class="card-title">Enter Results</h2>
+                            <div style="text-align:center; padding:30px 15px; color:#dc2626;">
+                                <div style="font-size:40px; margin-bottom:10px;">🔒</div>
+                                <div style="font-weight:bold; font-size:16px; margin-bottom:8px;">Results Entry Temporarily Locked</div>
+                                <div style="color:#6b7280; font-size:14px;">The admin has paused results entry for everyone. Please check back shortly, or contact the admin if you need a result recorded.</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
                 app.innerHTML = `
                     <button class="back-btn" onclick="state.view='menu'; render()">← Back to Menu</button>
                     <div class="card">
@@ -1158,14 +1459,37 @@
                         <div class="scrollable">
                             ${schedule.map(item => {
                                 if (!item.opponent || item.event === 'Break' || item.event === 'Pizza!') return '';
+
+                                if (item.isPlayoff) {
+                                    const result = getPlayoffResult(item.playoffRound, state.selectedTeam, item.opponent);
+                                    const didWin = result === state.selectedTeam;
+                                    const didLose = result !== undefined && result !== state.selectedTeam;
+                                    return `
+                                        <div class="schedule-item" style="border-left:4px solid #f59e0b;">
+                                            <div class="schedule-time">🏆 ${item.time}</div>
+                                            <div class="schedule-vs">vs ${getTeamName(item.opponent)}</div>
+                                            <div class="result-btns">
+                                                <button class="win-btn ${didWin ? 'active' : ''}" onclick="savePlayoffResult('${item.playoffRound}', ${state.selectedTeam}, ${item.opponent}, ${state.selectedTeam})">Win</button>
+                                                <button class="lose-btn ${didLose ? 'active' : ''}" onclick="savePlayoffResult('${item.playoffRound}', ${state.selectedTeam}, ${item.opponent}, ${item.opponent})">Lose</button>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+
                                 const result = getResult(item.time, item.team1, item.team2, item.event);
                                 const didWin = result === state.selectedTeam;
                                 const didLose = result !== undefined && result !== state.selectedTeam;
                                 const key = getResultKey(item.time, item.team1, item.team2, item.event);
+                                const myWager = myWagers[item.event];
+                                const pointsEarned = didWin ? (parseInt(myWager) || 0) : 0;
                                 return `
                                     <div class="schedule-item">
-                                        <div class="schedule-time">${item.time} - ${item.event}</div>
+                                        <div class="schedule-time">${item.time} - <span style="cursor:pointer; text-decoration:underline; color:#8b5cf6;" onclick="showRules('${item.event}')">${item.event}</span></div>
                                         <div class="schedule-vs">vs ${getTeamName(item.opponent)}</div>
+                                        <div style="font-size:12px; color:#6b7280; margin-top:2px;">
+                                            Wager: ${myWager !== undefined ? myWager : '—'}
+                                            ${result !== undefined ? ` &nbsp;•&nbsp; Earned: <strong style="color:${didWin ? '#059669' : '#dc2626'};">${didWin ? '+' + pointsEarned : '0'}</strong>` : ''}
+                                        </div>
                                         <div class="result-btns">
                                             <button class="win-btn ${didWin ? 'active' : ''}" 
                                                 data-result-key="${key}-win"
@@ -1182,6 +1506,59 @@
                         </div>
                     </div>
                 `;
+                }
+            } else if (state.view === 'playoffs') {
+                const info = getCurrentPlayoffInfo();
+
+                if (!data.playoffsEnabled) {
+                    app.innerHTML = `
+                        <button class="back-btn" onclick="state.view='menu'; render()">← Back to Menu</button>
+                        <div class="card">
+                            <h2 class="card-title">🏆 Playoffs</h2>
+                            <p style="text-align:center; color:#666;">Playoffs haven't started yet.</p>
+                        </div>
+                    `;
+                } else if (info.round === 'complete') {
+                    app.innerHTML = `
+                        <button class="back-btn" onclick="state.view='menu'; render()">← Back to Menu</button>
+                        <div class="card">
+                            <h2 class="card-title">🏆 Playoffs</h2>
+                            <div style="text-align:center; padding:30px 15px;">
+                                <div style="font-size:50px; margin-bottom:10px;">🏆</div>
+                                <div style="font-size:14px; color:#6b7280; margin-bottom:6px;">Champion</div>
+                                <div style="font-size:22px; font-weight:bold; color:#059669;">Team ${info.champion} - ${getTeamName(info.champion)}</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    app.innerHTML = `
+                        <button class="back-btn" onclick="state.view='menu'; render()">← Back to Menu</button>
+                        <div class="card">
+                            <h2 class="card-title">🏆 ${playoffRoundLabel(info.round)}</h2>
+                            <div class="scrollable">
+                                ${info.matchups.map(m => {
+                                    const decided = m.winner !== undefined;
+                                    return `
+                                        <div class="schedule-item">
+                                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                                <div style="font-weight:${m.winner === m.teamA ? 'bold' : 'normal'}; color:${decided ? (m.winner === m.teamA ? '#059669' : '#9ca3af') : '#111827'};">
+                                                    Seed ${m.seedA}: Team ${m.teamA} - ${getTeamName(m.teamA)} ${m.winner === m.teamA ? '✅' : ''}
+                                                </div>
+                                            </div>
+                                            <div style="text-align:center; color:#9ca3af; font-size:12px; margin:2px 0;">vs</div>
+                                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                                <div style="font-weight:${m.winner === m.teamB ? 'bold' : 'normal'}; color:${decided ? (m.winner === m.teamB ? '#059669' : '#9ca3af') : '#111827'};">
+                                                    Seed ${m.seedB}: Team ${m.teamB} - ${getTeamName(m.teamB)} ${m.winner === m.teamB ? '✅' : ''}
+                                                </div>
+                                            </div>
+                                            ${!decided ? '<div style="text-align:center; color:#f59e0b; font-size:12px; margin-top:6px;">⏳ Not yet played</div>' : ''}
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
             } else if (state.view === 'standings') {
                 const standings = calculateStandings();
                 app.innerHTML = `
@@ -1260,7 +1637,11 @@
                         <p style="text-align: center; color: #666; margin-bottom: 30px;">Administrative functions for managing the Silvalympics</p>
                         <button class="menu-btn orange" onclick="state.view='toggle-schedules-menu'; render()">🔄 Toggle Schedules</button>
                         <button class="menu-btn blue" onclick="state.view='toggle-wagers-menu'; render()">🎯 Toggle Wagers</button>
+                        <button class="menu-btn" style="background:#7c3aed;" onclick="state.view='toggle-results-menu'; render()">🔒 Toggle Results Entry</button>
+                        <button class="menu-btn" style="background:#ea580c;" onclick="state.view='event-wheel'; render()">🎡 Playoff Event Wheel</button>
+                        <button class="menu-btn" style="background:#b45309;" onclick="state.view='toggle-playoffs-menu'; render()">🏆 Toggle Playoffs</button>
                         <button class="menu-btn" style="background:#0891b2;" onclick="state.view='wager-status'; render()">📋 Wager Status by Team</button>
+                        <button class="menu-btn" style="background:#be185d;" onclick="openAdminResultsEntry()">📝 Admin: Enter Results</button>
                         <button class="menu-btn green" onclick="exportResults()">📊 Export Results</button>
                         <button class="menu-btn red" onclick="clearAllData()">🗑️ Clear All Data</button>
                         <button class="menu-btn" style="background:#374151;" onclick="state.view='debug'; render()">🔍 Debug / Connection Log</button>
@@ -1337,8 +1718,11 @@
                             <strong>Teams with wagers:</strong> ${Object.keys(data.wagers).length}<br>
                             <strong>Result entries:</strong> ${Object.keys(data.results).length}<br>
                             <strong>Schedules Enabled (local):</strong> ${data.schedulesEnabled ? '✅ ON' : '🔴 OFF'}<br>
-                            <strong>Wagers Enabled (local):</strong> ${data.wagersEnabled ? '✅ ON' : '🔴 OFF'}
+                            <strong>Wagers Enabled (local):</strong> ${data.wagersEnabled ? '✅ ON' : '🔴 OFF'}<br>
+                            <strong>Results Entry (local):</strong> ${data.resultsEnabled ? '✅ ON' : '🔴 LOCKED'}<br>
+                            <strong>Pending unsynced saves:</strong> ${pendingOps.length === 0 ? '✅ None' : '⚠️ ' + pendingOps.length + ' waiting to sync'}
                         </div>
+                        ${pendingOps.length > 0 ? `<button class="menu-btn" style="background:#dc2626; margin-bottom:10px;" onclick="retryPendingOps()">🔄 Retry Pending Saves Now</button>` : ''}
                         <button class="menu-btn" style="background:#f59e0b; margin-bottom:10px;" onclick="checkSettingsSync()">🔬 Check Settings Sync With Server</button>
                         <button class="menu-btn" style="background:#2563eb; margin-bottom:10px;" onclick="testConnection()">▶ Test Connection Now</button>
                         <button class="menu-btn" style="background:#059669; margin-bottom:10px;" onclick="forceSave()">💾 Force Save Now</button>
@@ -1367,6 +1751,144 @@
                         <button class="menu-btn green" onclick="setAllWagers(true)">✅ Enable All Teams</button>
                         <button class="menu-btn red" onclick="setAllWagers(false)">🔴 Disable All Teams</button>
                         <button class="menu-btn green" onclick="state.view='toggle-wagers-individual'; render()">🎯 Toggle Wagers (Individual Team)</button>
+                    </div>
+                `;
+            } else if (state.view === 'toggle-results-menu') {
+                app.innerHTML = `
+                    <button class="back-btn" onclick="state.view='admin'; render()">← Back to Admin Controls</button>
+                    <div class="card">
+                        <h2 class="card-title">🔒 Toggle Results Entry</h2>
+                        <p style="text-align: center; color: #666; margin-bottom: 20px;">
+                            If you're having syncing issues with many teams entering results at once,
+                            you can temporarily lock results entry for everyone and enter results
+                            yourself from the "Admin: Enter Results" screen.
+                        </p>
+                        <div style="text-align:center; margin-bottom:20px; font-weight:bold; color:${data.resultsEnabled ? '#059669' : '#dc2626'};">
+                            Current status: ${data.resultsEnabled ? '✅ Results entry is OPEN for all teams' : '🔒 Results entry is LOCKED for all teams'}
+                        </div>
+                        <button class="menu-btn green" onclick="setResultsEnabled(true)">✅ Enable Results Entry (All Teams)</button>
+                        <button class="menu-btn red" onclick="setResultsEnabled(false)">🔴 Disable Results Entry (All Teams)</button>
+                    </div>
+                `;
+            } else if (state.view === 'toggle-playoffs-menu') {
+                const seeds = data.playoffSeeds || [];
+                app.innerHTML = `
+                    <button class="back-btn" onclick="state.view='admin'; render()">← Back to Admin Controls</button>
+                    <div class="card">
+                        <h2 class="card-title">🏆 Toggle Playoffs</h2>
+                        <div style="text-align:center; margin-bottom:20px; font-weight:bold; color:${data.playoffsEnabled ? '#059669' : '#dc2626'};">
+                            Current status: ${data.playoffsEnabled ? '✅ Playoffs are ON' : '⚪ Playoffs are OFF'}
+                        </div>
+                        <p style="text-align:center; color:#666; margin-bottom:20px; font-size:13px;">
+                            Turning playoffs ON locks in the current standings as seeds 1-20 and
+                            starts a fresh bracket. Turning it back on again later always starts
+                            over from scratch with new seeds and no previous playoff results.
+                        </p>
+                        <button class="menu-btn green" onclick="setPlayoffsEnabled(true)">✅ Turn Playoffs ON (Fresh Start)</button>
+                        <button class="menu-btn red" onclick="setPlayoffsEnabled(false)">🔴 Turn Playoffs OFF</button>
+                        ${data.playoffsEnabled && seeds.length === 20 ? `
+                            <div style="margin-top:20px;">
+                                <div style="font-weight:bold; margin-bottom:8px; color:#374151;">Locked-in Seeds:</div>
+                                <div style="font-size:12px; color:#4b5563; line-height:1.8;">
+                                    ${seeds.map((team, i) => `${i + 1}. Team ${team} - ${getTeamName(team)}`).join('<br>')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            } else if (state.view === 'event-wheel') {
+                const colors = ['#ef4444','#f97316','#eab308','#22c55e','#14b8a6','#3b82f6','#8b5cf6','#ec4899','#64748b'];
+                const segAngle = 360 / EVENTS.length;
+                const eliminated = data.wheelEliminated || [];
+                const activeCount = EVENTS.filter(e => !eliminated.includes(e)).length;
+
+                const gradientStops = EVENTS.map((event, i) => {
+                    const isOut = eliminated.includes(event);
+                    const color = isOut ? '#d1d5db' : colors[i % colors.length];
+                    return `${color} ${i * segAngle}deg ${(i + 1) * segAngle}deg`;
+                }).join(', ');
+
+                app.innerHTML = `
+                    <button class="back-btn" onclick="state.view='admin'; render()">← Back to Admin Controls</button>
+                    <div class="card">
+                        <h2 class="card-title">🎡 Playoff Event Wheel</h2>
+                        <p style="text-align:center; color:#666; margin-bottom:16px; font-size:13px;">
+                            Gray out events to exclude them, then hit Spin. The wheel will only land on an active (colored) event.
+                        </p>
+
+                        <div style="position:relative; width:280px; height:280px; margin:0 auto 20px;">
+                            <div style="position:absolute; top:-14px; left:50%; transform:translateX(-50%); z-index:10; width:0; height:0; border-left:14px solid transparent; border-right:14px solid transparent; border-top:22px solid #111827;"></div>
+                            <div id="wheel-disc" style="width:280px; height:280px; border-radius:50%; border:6px solid #111827; background: conic-gradient(${gradientStops}); transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99); transform: rotate(${wheelCurrentRotation}deg);">
+                            </div>
+                            ${EVENTS.map((event, i) => {
+                                const isOut = eliminated.includes(event);
+                                const angle = i * segAngle + segAngle / 2;
+                                return `<div style="position:absolute; top:50%; left:50%; width:110px; height:20px; margin-left:0; transform-origin:0% 50%; transform: rotate(${angle}deg) translate(20px, -10px); pointer-events:none;">
+                                    <span style="display:inline-block; font-size:10px; font-weight:bold; color:${isOut ? '#6b7280' : 'white'}; text-shadow:0 1px 2px rgba(0,0,0,0.4); white-space:nowrap;">${event}</span>
+                                </div>`;
+                            }).join('')}
+                        </div>
+
+                        <div style="text-align:center; margin-bottom:16px;">
+                            ${data.wheelLastResult ? `<div style="font-size:18px; font-weight:bold; color:#059669;">🎉 Result: ${data.wheelLastResult}</div>` : `<div style="color:#9ca3af; font-size:13px;">No spin yet</div>`}
+                        </div>
+
+                        <button class="menu-btn" style="background:#059669;" ${activeCount === 0 ? 'disabled' : ''} onclick="spinWheel()" id="spin-btn">
+                            ${activeCount === 0 ? '⚠️ No Active Events Left' : '🎯 SPIN THE WHEEL'}
+                        </button>
+                        <button class="menu-btn" style="background:#6b7280;" onclick="resetWheel()">🔄 Reset Wheel (Un-eliminate All)</button>
+
+                        <div style="margin-top:20px;">
+                            <div style="font-weight:bold; margin-bottom:8px; color:#374151;">Tap an event to eliminate / restore it:</div>
+                            <div class="team-grid">
+                                ${EVENTS.map(event => {
+                                    const isOut = eliminated.includes(event);
+                                    return `
+                                        <button class="team-btn" onclick="toggleWheelEvent('${event}')" style="background:${isOut ? '#e5e7eb' : '#f0fdf4'}; color:${isOut ? '#9ca3af' : '#166534'}; text-decoration:${isOut ? 'line-through' : 'none'}; font-size:11px; padding:8px 4px;">
+                                            ${event}
+                                        </button>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (state.view === 'admin-results-entry') {
+                app.innerHTML = `
+                    <button class="back-btn" onclick="state.view='admin'; render()">← Back to Admin Controls</button>
+                    <div class="card">
+                        <h2 class="card-title">📝 Admin: Enter Results</h2>
+                        <p style="text-align:center; color:#666; margin-bottom:16px; font-size:13px;">
+                            Enter results directly for any match. This works even while results
+                            entry is locked for teams.
+                        </p>
+                        <div class="scrollable">
+                            ${SCHEDULE.map(slot => {
+                                if (slot.matches[0][2] === 'Pizza!') return '';
+                                return `
+                                    <div style="margin-bottom:14px;">
+                                        <div style="font-weight:bold; color:#374151; padding:6px 0; border-bottom:2px solid #e5e7eb; margin-bottom:6px;">${slot.time}</div>
+                                        ${slot.matches.map(m => {
+                                            const [t1, t2, event] = m;
+                                            if (event === 'Break') return '';
+                                            const result = getResult(slot.time, t1, t2, event);
+                                            const t1Won = result === t1;
+                                            const t2Won = result === t2;
+                                            return `
+                                                <div class="schedule-item">
+                                                    <div class="schedule-time" style="cursor:pointer; text-decoration:underline; color:#8b5cf6;" onclick="showRules('${event}')">${event}</div>
+                                                    <div class="schedule-vs">Team ${t1} (${getTeamName(t1)}) vs Team ${t2} (${getTeamName(t2)})</div>
+                                                    <div class="result-btns">
+                                                        <button class="win-btn ${t1Won ? 'active' : ''}" onclick="adminSaveResult('${slot.time}', ${t1}, ${t2}, '${event}', ${t1})">Team ${t1} Won</button>
+                                                        <button class="lose-btn ${t2Won ? 'active' : ''}" onclick="adminSaveResult('${slot.time}', ${t1}, ${t2}, '${event}', ${t2})">Team ${t2} Won</button>
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
                     </div>
                 `;
             } else if (state.view === 'toggle-individual') {
@@ -1723,6 +2245,11 @@
                     data.wagerOverride = {};
                     data.schedulesEnabled = true;
                     data.wagersEnabled = true;
+                    data.resultsEnabled = true;
+                    data.wheelEliminated = [];
+                    data.wheelLastResult = null;
+                    data.playoffsEnabled = false;
+                    data.playoffSeeds = [];
                     lastSaveTime = Date.now();
                     await saveData(['teamNames', 'wagers', 'results', 'settings']);
                     alert('All data cleared!');
@@ -1785,6 +2312,160 @@
                 alert('Incorrect code!');
             }
         }
+
+        function setResultsEnabled(enabled) {
+            const code = prompt(`Enter 4-digit code to ${enabled ? 'enable' : 'disable'} results entry for ALL teams:`);
+            if (code === '0820') {
+                data.resultsEnabled = enabled;
+                alert(`Results entry ${enabled ? 'enabled' : 'disabled'} for all teams!`);
+                lastSaveTime = Date.now();
+                render();
+                saveData();
+            } else if (code !== null) {
+                alert('Incorrect code!');
+            }
+        }
+
+        async function setPlayoffsEnabled(enabled) {
+            const code = prompt(`Enter 4-digit code to turn playoffs ${enabled ? 'ON' : 'OFF'}:`);
+            if (code !== '0820') {
+                if (code !== null) alert('Incorrect code!');
+                return;
+            }
+
+            if (enabled) {
+                if (!confirm('This will lock in the CURRENT standings as the playoff seeds and start a fresh bracket. Any previous playoff results will be cleared. Continue?')) {
+                    return;
+                }
+                const standings = calculateStandings();
+                data.playoffSeeds = standings.map(s => s.team);
+
+                // Fresh start - remove any leftover playoff results from a previous run
+                Object.keys(data.results).forEach(key => {
+                    if (key.startsWith('playoff_')) delete data.results[key];
+                });
+
+                data.playoffsEnabled = true;
+                alert('Playoffs are now ON! Seeds have been locked in based on current standings.');
+                lastSaveTime = Date.now();
+                render();
+                await saveData(['results', 'settings']);
+            } else {
+                data.playoffsEnabled = false;
+                alert('Playoffs are now OFF.');
+                lastSaveTime = Date.now();
+                render();
+                saveData();
+            }
+        }
+
+        function toggleWheelEvent(event) {
+            if (wheelSpinning) return;
+            if (!data.wheelEliminated) data.wheelEliminated = [];
+            if (data.wheelEliminated.includes(event)) {
+                data.wheelEliminated = data.wheelEliminated.filter(e => e !== event);
+            } else {
+                data.wheelEliminated.push(event);
+            }
+            lastSaveTime = Date.now();
+            render();
+            saveData();
+        }
+
+        function resetWheel() {
+            if (wheelSpinning) return;
+            data.wheelEliminated = [];
+            data.wheelLastResult = null;
+            lastSaveTime = Date.now();
+            render();
+            saveData();
+        }
+
+        function spinWheel() {
+            if (wheelSpinning) return;
+            const eliminated = data.wheelEliminated || [];
+            const activeEvents = EVENTS.filter(e => !eliminated.includes(e));
+            if (activeEvents.length === 0) {
+                alert('All events are eliminated - reset the wheel first.');
+                return;
+            }
+
+            wheelSpinning = true;
+            const winningEvent = activeEvents[Math.floor(Math.random() * activeEvents.length)];
+            const winningIndex = EVENTS.indexOf(winningEvent);
+            const segAngle = 360 / EVENTS.length;
+            const segmentCenterAngle = winningIndex * segAngle + segAngle / 2;
+
+            // Small random offset within the segment so it doesn't always land dead-center
+            const jitter = (Math.random() - 0.5) * (segAngle * 0.6);
+
+            // Rotation needed (mod 360) so the winning segment's center lands under the
+            // fixed pointer at the top of the wheel.
+            const neededMod = ((360 - segmentCenterAngle + jitter) % 360 + 360) % 360;
+
+            const spins = 5; // full extra rotations for a satisfying spin animation
+            const currentMod = ((wheelCurrentRotation % 360) + 360) % 360;
+            let newRotation = (wheelCurrentRotation - currentMod) + neededMod + spins * 360;
+            if (newRotation <= wheelCurrentRotation) newRotation += 360; // safety: always spin forward
+
+            // Mutate the existing DOM element directly (not via render()) so the CSS
+            // transition actually animates - a full re-render would recreate the node
+            // and the browser would just snap to the new position instead of spinning.
+            const wheelEl = document.getElementById('wheel-disc');
+            if (wheelEl) {
+                wheelEl.style.transform = `rotate(${newRotation}deg)`;
+            }
+            wheelCurrentRotation = newRotation;
+
+            const spinBtn = document.getElementById('spin-btn');
+            if (spinBtn) {
+                spinBtn.setAttribute('disabled', 'true');
+                spinBtn.textContent = '🎡 Spinning...';
+            }
+
+            setTimeout(() => {
+                wheelSpinning = false;
+                data.wheelLastResult = winningEvent;
+                lastSaveTime = Date.now();
+                render();
+                saveData();
+            }, 4100); // slightly longer than the 4s CSS transition so it fully settles first
+        }
+
+        function openAdminResultsEntry() {
+            const code = prompt('Enter 4-digit admin code to enter results directly:');
+            if (code === '0820') {
+                state.view = 'admin-results-entry';
+                render();
+            } else if (code !== null) {
+                alert('Incorrect code!');
+            }
+        }
+
+        function adminSaveResult(time, t1, t2, event, winner) {
+            // Admin entry always works, regardless of the resultsEnabled lock -
+            // that's the whole point of this screen (bypass sync issues by having
+            // one person enter results directly).
+            const key = getResultKey(time, t1, t2, event);
+            const existing = data.results[key];
+
+            if (existing === winner) {
+                delete data.results[key];
+            } else if (existing !== undefined) {
+                const confirmed = confirm(
+                    `This match is already recorded as a win for ${getTeamName(existing)}.\n\n` +
+                    `Change it so ${getTeamName(winner)} is the winner instead?`
+                );
+                if (!confirmed) return;
+                data.results[key] = winner;
+            } else {
+                data.results[key] = winner;
+            }
+
+            lastSaveTime = Date.now();
+            render();
+            mergeField('results', key, data.results[key]);
+        }
         
         function toggleIndividualWagers(teamNum) {
             const code = prompt(`Enter 4-digit code to toggle wagers for Team ${teamNum}:`);
@@ -1833,11 +2514,21 @@
             loadQuotaCount();
             dbg('Startup: ' + apiCallCount + ' API calls already made today' + (quotaExceeded ? ' — QUOTA LIMIT REACHED' : ''));
 
+            // Load any pending saves that failed before the page was closed/refreshed
+            loadPendingOps();
+            if (pendingOps.length > 0) {
+                dbg('Startup: found ' + pendingOps.length + ' unsynced change(s) from a previous session, retrying...');
+            }
+
             // Render immediately so user sees the interface right away
             render();
+            updateSyncBanner();
             
             // Load data in background on startup
             await loadData();
+
+            // Try to sync any pending changes right away
+            retryPendingOps();
             
             // Standings-only auto-refresh every 60 seconds.
             // Disabled automatically if daily quota reaches 19,000 calls.
@@ -1850,6 +2541,15 @@
                     }
                 }
             }, 60000);
+
+            // Retry any pending (previously failed) saves every 8 seconds until
+            // they succeed. This is what actually prevents data loss under load -
+            // a failed save keeps trying in the background instead of vanishing.
+            setInterval(() => {
+                if (pendingOps.length > 0) {
+                    retryPendingOps();
+                }
+            }, 8000);
         })();
     </script>
 </body>
