@@ -1822,8 +1822,10 @@
                                 ${EVENTS.map((event, i) => {
                                     const isOut = eliminated.includes(event);
                                     const angle = i * segAngle + segAngle / 2;
-                                    return `<div style="position:absolute; top:50%; left:50%; width:120px; height:24px; margin-left:0; transform-origin:0% 50%; transform: rotate(${angle}deg) translate(14px, -12px); pointer-events:none;">
-                                        <span style="display:inline-block; font-size:14px; font-weight:bold; color:${isOut ? '#6b7280' : 'white'}; text-shadow:0 1px 2px rgba(0,0,0,0.5); white-space:nowrap;">${event}</span>
+                                    return `<div style="position:absolute; top:50%; left:50%; width:0; height:0; transform: rotate(${angle}deg);">
+                                        <div style="position:absolute; top:-88px; left:0; transform: translateX(-50%) rotate(${-angle}deg); width:78px; text-align:center;">
+                                            <span style="display:inline-block; font-size:14px; font-weight:bold; line-height:1.15; color:${isOut ? '#6b7280' : 'white'}; text-shadow:0 1px 2px rgba(0,0,0,0.5); white-space:normal; word-wrap:break-word;">${event}</span>
+                                        </div>
                                     </div>`;
                                 }).join('')}
                             </div>
