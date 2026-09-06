@@ -1212,8 +1212,8 @@
             const s4 = getTeamForSeed(4), s5 = getTeamForSeed(5), s6 = getTeamForSeed(6);
 
             return [
-                { teamA: s1, teamB: lowerSurvivor.team, seedA: 1, seedB: lowerSurvivor.seed, winner: getPlayoffResult('quarterfinal', s1, lowerSurvivor.team) },
-                { teamA: s2, teamB: higherSurvivor.team, seedA: 2, seedB: higherSurvivor.seed, winner: getPlayoffResult('quarterfinal', s2, higherSurvivor.team) },
+                { teamA: s1, teamB: higherSurvivor.team, seedA: 1, seedB: higherSurvivor.seed, winner: getPlayoffResult('quarterfinal', s1, higherSurvivor.team) },
+                { teamA: s2, teamB: lowerSurvivor.team, seedA: 2, seedB: lowerSurvivor.seed, winner: getPlayoffResult('quarterfinal', s2, lowerSurvivor.team) },
                 { teamA: s3, teamB: s6, seedA: 3, seedB: 6, winner: getPlayoffResult('quarterfinal', s3, s6) },
                 { teamA: s4, teamB: s5, seedA: 4, seedB: 5, winner: getPlayoffResult('quarterfinal', s4, s5) }
             ];
@@ -1269,6 +1269,36 @@
             }
 
             return { round: 'complete', matchups: final, champion: final[0].winner };
+        }
+
+        // Returns EVERY round that has started so far, in order, each with its
+        // matchups and whether it's fully decided. Used by the Playoffs display
+        // page so completed rounds stay visible as new rounds are added, instead
+        // of being replaced by the current round.
+        function getAllPlayoffRoundsInfo() {
+            const rounds = [];
+            if (!data.playoffsEnabled || !data.playoffSeeds || data.playoffSeeds.length !== 20) {
+                return rounds;
+            }
+
+            const wc = getWildCardMatchups();
+            const wcComplete = wc.every(m => m.winner !== undefined);
+            rounds.push({ round: 'wildcard', matchups: wc, complete: wcComplete });
+            if (!wcComplete) return rounds;
+
+            const qf = getQuarterfinalMatchups();
+            const qfComplete = qf.every(m => m.winner !== undefined);
+            rounds.push({ round: 'quarterfinal', matchups: qf, complete: qfComplete });
+            if (!qfComplete) return rounds;
+
+            const sf = getSemifinalMatchups();
+            const sfComplete = sf.every(m => m.winner !== undefined);
+            rounds.push({ round: 'semifinal', matchups: sf, complete: sfComplete });
+            if (!sfComplete) return rounds;
+
+            const final = getFinalMatchup();
+            rounds.push({ round: 'final', matchups: final, complete: final.every(m => m.winner !== undefined) });
+            return rounds;
         }
 
         let lastRenderedView = null;
@@ -1508,7 +1538,10 @@
                 `;
                 }
             } else if (state.view === 'playoffs') {
-                const info = getCurrentPlayoffInfo();
+                const rounds = getAllPlayoffRoundsInfo();
+                const champion = (rounds.length > 0 && rounds[rounds.length - 1].round === 'final' && rounds[rounds.length - 1].complete)
+                    ? rounds[rounds.length - 1].matchups[0].winner
+                    : null;
 
                 if (!data.playoffsEnabled) {
                     app.innerHTML = `
@@ -1518,43 +1551,45 @@
                             <p style="text-align:center; color:#666;">Playoffs haven't started yet.</p>
                         </div>
                     `;
-                } else if (info.round === 'complete') {
-                    app.innerHTML = `
-                        <button class="back-btn" onclick="state.view='menu'; render()">← Back to Menu</button>
-                        <div class="card">
-                            <h2 class="card-title">🏆 Playoffs</h2>
-                            <div style="text-align:center; padding:30px 15px;">
-                                <div style="font-size:50px; margin-bottom:10px;">🏆</div>
-                                <div style="font-size:14px; color:#6b7280; margin-bottom:6px;">Champion</div>
-                                <div style="font-size:22px; font-weight:bold; color:#059669;">Team ${info.champion} - ${getTeamName(info.champion)}</div>
-                            </div>
-                        </div>
-                    `;
                 } else {
                     app.innerHTML = `
                         <button class="back-btn" onclick="state.view='menu'; render()">← Back to Menu</button>
                         <div class="card">
-                            <h2 class="card-title">🏆 ${playoffRoundLabel(info.round)}</h2>
+                            <h2 class="card-title">🏆 Playoffs</h2>
+                            ${champion ? `
+                                <div style="text-align:center; padding:20px 15px; margin-bottom:10px; background:#f0fdf4; border-radius:10px;">
+                                    <div style="font-size:44px; margin-bottom:6px;">🏆</div>
+                                    <div style="font-size:13px; color:#6b7280; margin-bottom:4px;">Champion</div>
+                                    <div style="font-size:20px; font-weight:bold; color:#059669;">Team ${champion} - ${getTeamName(champion)}</div>
+                                </div>
+                            ` : ''}
                             <div class="scrollable">
-                                ${info.matchups.map(m => {
-                                    const decided = m.winner !== undefined;
-                                    return `
-                                        <div class="schedule-item">
-                                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                                <div style="font-weight:${m.winner === m.teamA ? 'bold' : 'normal'}; color:${decided ? (m.winner === m.teamA ? '#059669' : '#9ca3af') : '#111827'};">
-                                                    Seed ${m.seedA}: Team ${m.teamA} - ${getTeamName(m.teamA)} ${m.winner === m.teamA ? '✅' : ''}
-                                                </div>
-                                            </div>
-                                            <div style="text-align:center; color:#9ca3af; font-size:12px; margin:2px 0;">vs</div>
-                                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                                <div style="font-weight:${m.winner === m.teamB ? 'bold' : 'normal'}; color:${decided ? (m.winner === m.teamB ? '#059669' : '#9ca3af') : '#111827'};">
-                                                    Seed ${m.seedB}: Team ${m.teamB} - ${getTeamName(m.teamB)} ${m.winner === m.teamB ? '✅' : ''}
-                                                </div>
-                                            </div>
-                                            ${!decided ? '<div style="text-align:center; color:#f59e0b; font-size:12px; margin-top:6px;">⏳ Not yet played</div>' : ''}
+                                ${rounds.map(r => `
+                                    <div style="margin-bottom:16px;">
+                                        <div style="font-weight:bold; color:#374151; padding:6px 0; border-bottom:2px solid #e5e7eb; margin-bottom:8px;">
+                                            ${playoffRoundLabel(r.round)}
                                         </div>
-                                    `;
-                                }).join('')}
+                                        ${r.matchups.map(m => {
+                                            const decided = m.winner !== undefined;
+                                            return `
+                                                <div class="schedule-item">
+                                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                                        <div style="font-weight:${m.winner === m.teamA ? 'bold' : 'normal'}; color:${decided ? (m.winner === m.teamA ? '#059669' : '#9ca3af') : '#111827'};">
+                                                            Seed ${m.seedA}: Team ${m.teamA} - ${getTeamName(m.teamA)} ${m.winner === m.teamA ? '✅' : ''}
+                                                        </div>
+                                                    </div>
+                                                    <div style="text-align:center; color:#9ca3af; font-size:12px; margin:2px 0;">vs</div>
+                                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                                        <div style="font-weight:${m.winner === m.teamB ? 'bold' : 'normal'}; color:${decided ? (m.winner === m.teamB ? '#059669' : '#9ca3af') : '#111827'};">
+                                                            Seed ${m.seedB}: Team ${m.teamB} - ${getTeamName(m.teamB)} ${m.winner === m.teamB ? '✅' : ''}
+                                                        </div>
+                                                    </div>
+                                                    ${!decided ? '<div style="text-align:center; color:#f59e0b; font-size:12px; margin-top:6px;">⏳ Not yet played</div>' : ''}
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                `).join('')}
                             </div>
                         </div>
                     `;
@@ -1822,8 +1857,12 @@
                                 ${EVENTS.map((event, i) => {
                                     const isOut = eliminated.includes(event);
                                     const angle = i * segAngle + segAngle / 2;
+                                    // Counter-rotate by the segment angle PLUS the wheel's current total
+                                    // rotation, so labels stay upright and readable once the wheel settles,
+                                    // no matter how many times it's spun.
+                                    const counterAngle = -(angle + wheelCurrentRotation);
                                     return `<div style="position:absolute; top:50%; left:50%; width:0; height:0; transform: rotate(${angle}deg);">
-                                        <div style="position:absolute; top:-88px; left:0; transform: translateX(-50%) rotate(${-angle}deg); width:78px; text-align:center;">
+                                        <div style="position:absolute; top:-88px; left:0; transform: translateX(-50%) rotate(${counterAngle}deg); width:78px; text-align:center;">
                                             <span style="display:inline-block; font-size:14px; font-weight:bold; line-height:1.15; color:${isOut ? '#6b7280' : 'white'}; text-shadow:0 1px 2px rgba(0,0,0,0.5); white-space:normal; word-wrap:break-word;">${event}</span>
                                         </div>
                                     </div>`;
