@@ -1818,15 +1818,15 @@
 
                         <div style="position:relative; width:280px; height:280px; margin:0 auto 20px;">
                             <div style="position:absolute; top:-14px; left:50%; transform:translateX(-50%); z-index:10; width:0; height:0; border-left:14px solid transparent; border-right:14px solid transparent; border-top:22px solid #111827;"></div>
-                            <div id="wheel-disc" style="width:280px; height:280px; border-radius:50%; border:6px solid #111827; background: conic-gradient(${gradientStops}); transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99); transform: rotate(${wheelCurrentRotation}deg);">
+                            <div id="wheel-disc" style="position:relative; width:280px; height:280px; border-radius:50%; border:6px solid #111827; background: conic-gradient(${gradientStops}); transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99); transform: rotate(${wheelCurrentRotation}deg);">
+                                ${EVENTS.map((event, i) => {
+                                    const isOut = eliminated.includes(event);
+                                    const angle = i * segAngle + segAngle / 2;
+                                    return `<div style="position:absolute; top:50%; left:50%; width:120px; height:24px; margin-left:0; transform-origin:0% 50%; transform: rotate(${angle}deg) translate(14px, -12px); pointer-events:none;">
+                                        <span style="display:inline-block; font-size:14px; font-weight:bold; color:${isOut ? '#6b7280' : 'white'}; text-shadow:0 1px 2px rgba(0,0,0,0.5); white-space:nowrap;">${event}</span>
+                                    </div>`;
+                                }).join('')}
                             </div>
-                            ${EVENTS.map((event, i) => {
-                                const isOut = eliminated.includes(event);
-                                const angle = i * segAngle + segAngle / 2;
-                                return `<div style="position:absolute; top:50%; left:50%; width:110px; height:20px; margin-left:0; transform-origin:0% 50%; transform: rotate(${angle}deg) translate(20px, -10px); pointer-events:none;">
-                                    <span style="display:inline-block; font-size:10px; font-weight:bold; color:${isOut ? '#6b7280' : 'white'}; text-shadow:0 1px 2px rgba(0,0,0,0.4); white-space:nowrap;">${event}</span>
-                                </div>`;
-                            }).join('')}
                         </div>
 
                         <div style="text-align:center; margin-bottom:16px;">
@@ -1863,24 +1863,43 @@
                             entry is locked for teams.
                         </p>
                         <div class="scrollable">
-                            ${SCHEDULE.map(slot => {
-                                if (slot.matches[0][2] === 'Pizza!') return '';
+                            ${[...Array(20)].map((_, i) => {
+                                const teamNum = i + 1;
+                                const teamSchedule = getTeamSchedule(teamNum);
+                                const items = teamSchedule.filter(item => item.opponent && item.event !== 'Break' && item.event !== 'Pizza!');
+                                if (items.length === 0) return '';
+
                                 return `
-                                    <div style="margin-bottom:14px;">
-                                        <div style="font-weight:bold; color:#374151; padding:6px 0; border-bottom:2px solid #e5e7eb; margin-bottom:6px;">${slot.time}</div>
-                                        ${slot.matches.map(m => {
-                                            const [t1, t2, event] = m;
-                                            if (event === 'Break') return '';
-                                            const result = getResult(slot.time, t1, t2, event);
-                                            const t1Won = result === t1;
-                                            const t2Won = result === t2;
+                                    <div style="margin-bottom:18px;">
+                                        <div style="font-weight:bold; color:#374151; padding:6px 0; border-bottom:2px solid #e5e7eb; margin-bottom:6px;">
+                                            Team ${teamNum} - ${getTeamName(teamNum)}
+                                        </div>
+                                        ${items.map(item => {
+                                            if (item.isPlayoff) {
+                                                const result = getPlayoffResult(item.playoffRound, teamNum, item.opponent);
+                                                const teamWon = result === teamNum;
+                                                const oppWon = result === item.opponent;
+                                                return `
+                                                    <div class="schedule-item" style="border-left:4px solid #f59e0b;">
+                                                        <div class="schedule-time">🏆 ${item.time}</div>
+                                                        <div class="schedule-vs">Team ${teamNum} (${getTeamName(teamNum)}) vs Team ${item.opponent} (${getTeamName(item.opponent)})</div>
+                                                        <div class="result-btns">
+                                                            <button class="win-btn ${teamWon ? 'active' : ''}" onclick="savePlayoffResult('${item.playoffRound}', ${teamNum}, ${item.opponent}, ${teamNum})">Team ${teamNum} Won</button>
+                                                            <button class="lose-btn ${oppWon ? 'active' : ''}" onclick="savePlayoffResult('${item.playoffRound}', ${teamNum}, ${item.opponent}, ${item.opponent})">Team ${item.opponent} Won</button>
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            }
+                                            const result = getResult(item.time, item.team1, item.team2, item.event);
+                                            const t1Won = result === item.team1;
+                                            const t2Won = result === item.team2;
                                             return `
                                                 <div class="schedule-item">
-                                                    <div class="schedule-time" style="cursor:pointer; text-decoration:underline; color:#8b5cf6;" onclick="showRules('${event}')">${event}</div>
-                                                    <div class="schedule-vs">Team ${t1} (${getTeamName(t1)}) vs Team ${t2} (${getTeamName(t2)})</div>
+                                                    <div class="schedule-time">${item.time} - <span style="cursor:pointer; text-decoration:underline; color:#8b5cf6;" onclick="showRules('${item.event}')">${item.event}</span></div>
+                                                    <div class="schedule-vs">Team ${item.team1} (${getTeamName(item.team1)}) vs Team ${item.team2} (${getTeamName(item.team2)})</div>
                                                     <div class="result-btns">
-                                                        <button class="win-btn ${t1Won ? 'active' : ''}" onclick="adminSaveResult('${slot.time}', ${t1}, ${t2}, '${event}', ${t1})">Team ${t1} Won</button>
-                                                        <button class="lose-btn ${t2Won ? 'active' : ''}" onclick="adminSaveResult('${slot.time}', ${t1}, ${t2}, '${event}', ${t2})">Team ${t2} Won</button>
+                                                        <button class="win-btn ${t1Won ? 'active' : ''}" onclick="adminSaveResult('${item.time}', ${item.team1}, ${item.team2}, '${item.event}', ${item.team1})">Team ${item.team1} Won</button>
+                                                        <button class="lose-btn ${t2Won ? 'active' : ''}" onclick="adminSaveResult('${item.time}', ${item.team1}, ${item.team2}, '${item.event}', ${item.team2})">Team ${item.team2} Won</button>
                                                     </div>
                                                 </div>
                                             `;
